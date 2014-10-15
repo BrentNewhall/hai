@@ -37,7 +37,7 @@ if( $userID != "" )
 <li class="not-yet"> Hai's users pay Hai's bills. USD $2 per month gives you a "Sponsor" badge next to your avatar.</li>
 <li class="not-yet"> Hai lets you cross-post to Facebook and Twitter, if you desire.</li>
 <li class="not-yet"> Hai provides a robust RESTful API for posting and accessing Hai.</li>
-<li> Hai is <a href="assets/hai-source.zip">open source</a>.</li>
+<li> Hai is <a href="https://github.com/BrentNewhall/hai">open source</a>.</li>
 </ul>
 
 <p><a href="stats.php">Stats</a></p>
