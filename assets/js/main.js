@@ -166,7 +166,7 @@ function updatePreview( source_div_id, target_div_id )
 	text = text.replace( /(\s|^)_([\S\s]+?)_(\s|\n|\.|\,|$)/g, "$1<em>$2</em>$3" );
 	text = text.replace( /\*([\S\s]+?)\*/g, "<em>$1</em>" );
 	text = text.replace( /(http|https):\/\/www\.youtube\.com\/watch\?v=([\S]+)/ig, "<iframe type=\"text/html\" width=\"500\" height=\"320\" src=\"$1://www.youtube.com/embed/$2\" frameborder=\"0\" />" );
-	text = text.replace( /(http|https):\/\/youtu\.be\/([\S]+)/ig, "<iframe type=\"text/html\" width=\"500\" height=\"320\" src=\"$1://www.youtube.com/embed/$2\" frameborder=\"0\" />" );
+	text = text.replace( /(http|https):\/\/youtu\.be\/([\S]+)/ig, "<iframe type=\"text/html\" width=\"500\" height=\"320\" src=\"$1://www.youtube.com/embed/$2\" frameborder=\"0\"></iframe>" );
 	text = text.replace( /(http|https):\/\/([\S]+)\.(jpg|jpeg|gif|png)\|([0-9]+)/ig, "<img src=\"$1://$2.$3\" style=\"width: $4px; max-width: 500px\" />" );
 	text = text.replace( /(http|https):\/\/([\S]+)\.(jpg|jpeg|gif|png)([^\"])/ig, "<img src=\"$1://$2.$3\" style=\"max-width: 500px\" />$4" );
 	text = text.replace( /(http|https):\/\/([A-Za-z0-9\.\%\$&\?\#\/\-_=]+)(\s|\n|$)/igm, "<a href=\"$1://$2\">$2</a>$3" );
@@ -219,19 +219,30 @@ function setReplyTo( post_id, author, content )
 		toggleComposePane( 'compose-tools', 'compose-pane', 'compose-post' );
 	}
 
-function setComposeForEdit( post_id, compose_pane_id, content )
+function setComposeForEdit( post_id, compose_div_id, content, comment_id )
 	{
 	var content2 = content.replace( /==\[\[BR\]\]==/g, "\n" );
 	var content2 = content2.replace( /==\[\[QUOTE\]\]==/g, "\"" );
 	// Update div
-	var div = document.getElementById(compose_pane_id);
+	var div = document.getElementById(compose_div_id);
 	div.value = content2;
-	var div = document.getElementById('reply-to');
-	div.innerHTML = "<strong>Editing</strong> <input type='hidden' name='editing-post-id' value='" + post_id + "' />";
-	// Display compose pane, if not visible
-	div.style.display = "block";
-	if( document.getElementById('compose-pane').style.display == "none" )
-		toggleComposePane( 'compose-tools', 'compose-pane', 'compose-post' );
+	if( compose_div_id == "compose-post" )
+		{
+		var div = document.getElementById('reply-to');
+		div.innerHTML = "<strong>Editing</strong> <input type='hidden' name='editing-post-id' value='" + post_id + "' />";
+		// Display compose pane, if not visible
+		div.style.display = "block";
+		if( document.getElementById('compose-pane').style.display == "none" )
+			toggleComposePane( 'compose-tools', 'compose-pane', 'compose-post' );
+		}
+	else
+		{
+		var div = document.getElementById('reply-to-'+post_id);
+		div.innerHTML = "</strong> <input type='hidden' name='editing-comment-id' value='" + comment_id + "' />";
+		// Display compose pane, if not visible
+		if( document.getElementById('compose-pane-' + post_id).style.display == "none" )
+			toggleComposePane( 'compose-tools-' + post_id, 'compose-pane-' + post_id, 'compose-comment-' + post_id );
+		}
 	}
 
 function sendData( params )
@@ -279,12 +290,12 @@ function displayWorldSuggestions( source_div, restrictions_div, public_checkbox 
 	var text = document.getElementById( source_div ).value;
 	if( text == "" )
 		{
-		document.getElementById(restrictions_div).innerHTML = "This post will appear in the \"Everyone\" stream, and in the streams of anyone who's added you to a Team.";
+		document.getElementById(restrictions_div).innerHTML = "This post will appear in the \"Everything\" stream, and in the streams of anyone who's added you to a Team.";
 		}
 	else
 		{
 		if( document.getElementById(public_checkbox).checked )
-			document.getElementById(restrictions_div).innerHTML = "This post will appear in the \"Everyone\" stream, and in the streams of anyone who's added you to a Team, and in the \"" + text + "\" World.";
+			document.getElementById(restrictions_div).innerHTML = "This post will appear in the \"Everything\" stream, and in the streams of anyone who's added you to a Team, and in the \"" + text + "\" World.";
 		else
 			document.getElementById(restrictions_div).innerHTML = "This post will appear in the \"" + text + "\" World.";
 		}

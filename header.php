@@ -28,12 +28,16 @@ print( "<div style=\"position: fixed; bottom: 5px; right: 5px; color: white; fon
 </div>
 
 <?php
-/*
-print( "<div style=\"margin: auto; width: 800px; background-color: white; padding: 10px; font-size: 14pt;\">\n" );
-print( "<h1>One sec; Hai is being fixed</h1>\n" . "<p>I have to align six hydrocoptic marzul vanes so fitted to the ambaphascient lunar wain shaft that side fumbling can be effectively prevented.</p><p>Be back shortly.</p>\n" );
-print( "<center><img src=\"assets/images/my-little-pony-friendship-is-magic-brony-there-i-fixed-it.gif\" align=\"center\" width=\"500\" height=\"332\" /></center>\n" );
-print( "</div>\n" ); require_once( "footer.php" ); exit( 0 );
-*/
+
+function siteIsDown()
+	{
+	print( "<div style=\"margin: auto; width: 800px; background-color: white; padding: 10px; font-size: 14pt;\">\n" );
+	print( "<h1>One sec; Hai is being fixed</h1>\n" . "<p>I have to align six hydrocoptic marzul vanes so fitted to the ambaphascient lunar wain shaft that side fumbling can be effectively prevented.</p><p>Be back shortly.</p>\n" );
+	print( "<center><img src=\"assets/images/my-little-pony-friendship-is-magic-brony-there-i-fixed-it.gif\" align=\"center\" width=\"500\" height=\"332\" /></center>\n" );
+	print( "</div>\n" ); require_once( "footer.php" ); exit( 0 );
+	}
+//siteIsDown();
+
 ?>
 
 <a name="top"></a>

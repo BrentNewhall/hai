@@ -60,6 +60,20 @@ if( isset( $_POST["editing-post-id"] ) )
 	if( isset( $_POST["redirect"] )  &&  $_POST["redirect"] != "" )
 		redirectToNewPage( $_POST["redirect"] );
 	}
+elseif( isset( $_POST["editing-comment-id"] ) )
+	{
+	// Editing a post.
+	$comment_id = $_POST["editing-comment-id"];
+	$sql = "UPDATE comments SET content = ? WHERE id = ?";
+	$stmt = $db->stmt_init();
+	$stmt->prepare( $sql );
+	$stmt->bind_param( "ss", $_POST["compose-post"], $comment_id );
+	$stmt->execute();
+	$stmt->close();
+	// Redirect user
+	if( isset( $_POST["redirect"] )  &&  $_POST["redirect"] != "" )
+		redirectToNewPage( $_POST["redirect"] );
+	}
 elseif( isset( $_POST["compose-post"] ) )
 	{
 	$sql = "";

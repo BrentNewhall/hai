@@ -96,18 +96,16 @@ if( isset( $_GET["t"] )  &&  $_GET["t"] != "" )
 		print( "<form action=\"teams.php\" method=\"post\">\n" );
 		print( "<input type=\"hidden\" name=\"team-id\" value=\"" . $_GET["t"] . "\" />\n" );
 		$stmt = $db->stmt_init();
-		$sql = "SELECT users.id, users.username, users.visible_name, users.profile_public FROM user_team_members, users WHERE user_team_members.team = ? AND user_team_members.user = users.id ORDER BY users.visible_name LIMIT 500";
+		$sql = "SELECT users.id, users.username, users.visible_name, users.real_name, users.profile_public FROM user_team_members, users WHERE user_team_members.team = ? AND user_team_members.user = users.id ORDER BY users.visible_name LIMIT 500";
 		$stmt->prepare( $sql );
 		$stmt->bind_param( "s", $_GET["t"] );
 		$stmt->execute();
-		$stmt->bind_result( $user_id, $username, $visible_name, $profile_public );
+		$stmt->bind_result( $user_id, $username, $visible_name, $real_name, $profile_public );
 		while( $stmt->fetch() )
 			{
 			print( "<input type=\"checkbox\" name=\"$user_id\" value=\"$user_id\" checked=\"checked\" /> " );
-			if( $profile_public == 1 )
-				print( "<a href=\"profile.php?i=$user_id\">$visible_name</a><br />\n" );
-			else
-				print( "$visible_name<br />\n" );
+			print( getAuthorLink( $user_id, $visible_name, $real_name, $profile_public ) );
+			print( "<br />\n" );
 			}
 		$stmt->close();
 		print( "<input type=\"submit\" name=\"update-team\" value=\"Update membership\">\n" );
@@ -133,27 +131,26 @@ else
 	foreach( array_keys( $teams ) as $team_id )
 		{
 		$stmt = $db->stmt_init();
-		$sql = "SELECT users.id, users.username, users.visible_name, users.profile_public FROM user_team_members, users WHERE user_team_members.team = ? AND user_team_members.user = users.id ORDER BY users.visible_name LIMIT 5";
+		$sql = "SELECT users.id, users.username, users.visible_name, users.real_name, users.profile_public FROM user_team_members, users WHERE user_team_members.team = ? AND user_team_members.user = users.id ORDER BY users.visible_name";
 		$stmt->prepare( $sql );
 		$stmt->bind_param( "s", $team_id );
 		$stmt->execute();
 		$stmt->store_result();
-		$stmt->bind_result( $user_id, $username, $user_visible_name, $profile_public );
+		$stmt->bind_result( $user_id, $username, $user_visible_name, $user_real_name, $profile_public );
 		$membership_count = $stmt->num_rows;
 		print( "<p><a href=\"teams.php?t=$team_id\">" . $teams[$team_id] . "</a> ($membership_count members" );
 		if( $membership_count > 0 )
 			{
 			print( ": " );
 			$members = array();
-			while( $stmt->fetch() )
+			$index = 0;
+			while( $stmt->fetch()  &&  $index < 10 )
 				{
-				if( $profile_public == 1 )
-					array_push( $members, "<a href=\"profile.php?i=$user_id\">$user_visible_name</a>" );
-				else
-					array_push( $members, $user_visible_name );
+				array_push( $members, getAuthorLink( $user_id, $user_visible_name, $user_real_name, $profile_public ) );
+				$index++;
 				}
 			print( implode( ", ", $members ) );
-			if( $membership_count > 5 )
+			if( $index < $membership_count )
 				print( "..." );
 			}
 		$stmt->close();

@@ -34,11 +34,12 @@ function getStuff( $db, $thing, $userID )
 $page_title = "Profile";
 if( isset( $_GET["i"] )  &&  $_GET["i"] != "" )
 	{
+	$user_id = $_GET["i"];
 	$sql = "SELECT visible_name, real_name, profile_public FROM users WHERE id = ?";
 	$stmt = $db->stmt_init();
 	if( $stmt->prepare( $sql ) )
 		{
-		$stmt->bind_param( "s", $_GET["i"] );
+		$stmt->bind_param( "s", $user_id );
 		$stmt->execute();
 		$stmt->store_result();
 		$stmt->bind_result( $visible_name, $real_name, $profile_public );
@@ -52,8 +53,8 @@ if( isset( $_GET["i"] )  &&  $_GET["i"] != "" )
 			if( $userID != "" )
 				displayNavbar( $db, $userID );
 			// Get any public information and display that
-			getStuff( $db, "email", $userID );
-			getStuff( $db, "phone", $userID );
+			getStuff( $db, "email", $user_id );
+			getStuff( $db, "phone", $user_id );
 			$sql = "SELECT DISTINCT posts.id, posts.content, posts.created, users.visible_name, users.real_name, users.username, users.profile_public, posts.author, posts.parent FROM posts " .
 				   "JOIN users ON (posts.author = users.id) " .
 				   "WHERE posts.author = ? " .

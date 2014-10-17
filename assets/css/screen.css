@@ -1,11 +1,9 @@
 body	{
-	ffont-family: Georgia;
 	font-family: 'Oxygen', sans-serif;
 	font-size: 11pt;
 	background-color: #333333;
 	}
 td	{
-	ffont-family: Georgia;
 	font-family: 'Oxygen', sans-serif;
 	font-size: 11pt;
 	vertical-align: top;
@@ -99,16 +97,6 @@ p.view-content	{
 	color: #00aa00;
 	padding: 5px;
 	}
-.banner-ad	{
-	border: 1px solid black;
-	background-color: #ff4444;
-	text-align: center;
-	}
-img.banner-ad	{
-	margin: auto;
-	width: 728px;
-	height: 90px;
-	}
 .post-container	{
 	display: table;
 	width: 100%;
@@ -165,14 +153,18 @@ div.comment-author	{
 .compose-post	{
 	width: 510px;
 	height: 135px;
-	ffont-family: Verdana;
 	font-family: 'Oxygen', sans-serif;
 	font-size: 10pt;
 	}
 .compose-comment	{
 	width: 410px;
 	height: 60px;
-	ffont-family: Verdana;
+	font-family: 'Oxygen', sans-serif;
+	font-size: 10pt;
+	}
+.compose-room	{
+	width: 410px;
+	height: 60px;
 	font-family: 'Oxygen', sans-serif;
 	font-size: 10pt;
 	}
@@ -188,6 +180,17 @@ div.comment-author	{
 	z-index: 100;
 	}
 .comment-preview	{
+	position: relative;
+	top: 0px;
+	left: 0px;
+	width: 400px;
+	min-height: 50px;
+	border: 1px solid #666666;
+	padding: 5px;
+	background-color: white;
+	z-index: 100;
+	}
+.preview-room	{
 	position: relative;
 	top: 0px;
 	left: 0px;
@@ -215,6 +218,7 @@ div.comment-author	{
 	border-top: 1px solid #dddddd;
 	display: table-cell;
 	vertical-align: top;
+	padding-bottom: 10px;
 	}
 .update-group-membership	{
 	position: relative;
@@ -277,10 +281,16 @@ div.comment-author	{
 	color: #888888;
 	background-color: white;
 	}
+/* Pings */
 .ping	{
 	border-top: 1px solid #dddddd;
 	}
 .ping-read	{
 	color: #999999;
+	}
+.room-members	{
+	float: right;
+	border: 1px solid #dddddd;
+	padding: 5px;
 	}
 

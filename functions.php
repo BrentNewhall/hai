@@ -20,6 +20,7 @@ function displayComposePane( $flavor, $db, $userID, $post_id = "" )
 	$preview_class = "post-preview";
 	$tools_id = "compose-tools";
 	$compose_pane_id = "compose-pane";
+	$in_reply_to_id = "reply-to";
 	if( $flavor == "comment" )
 		{
 		$button_area_width = 100;
@@ -33,16 +34,31 @@ function displayComposePane( $flavor, $db, $userID, $post_id = "" )
 		$preview_class = "comment-preview";
 		$tools_id = "compose-tools-$post_id";
 		$compose_pane_id = "compose-pane-$post_id";
+		$in_reply_to_id = "reply-to-$post_id";
 		}
-	?>
-	<form action="index.php" method="post">
-	<?php
+	elseif( $flavor == "room" )
+		{
+		$button_area_width = 100;
+		$width = 400;
+		$height = 150;
+		$compose_class = "compose-room";
+		$preview_class = "preview-room";
+		}
+	if( $flavor == "room" )
+		print( "<form action=\"room.php\" method=\"post\">\n" );
+	else
+		print( "<form action=\"index.php\" method=\"post\">\n" );
+	
 	if( isset( $_GET["tab"] ) )
 		print( "<input type=\"hidden\" name=\"redirect\" value=\"" . $_SERVER["PHP_SELF"] . "?tab=" . $_GET["tab"] . "\" />\n" );
+	elseif( isset( $_GET["i"] ) )
+		print( "<input type=\"hidden\" name=\"redirect\" value=\"" . $_SERVER["PHP_SELF"] . "?i=" . $_GET["i"] . "\" />\n" );
 	else
 		print( "<input type=\"hidden\" name=\"redirect\" value=\"" . $_SERVER["PHP_SELF"] . "\" />\n" );
 	if( $flavor == "comment" )
 		print( "<input type='hidden' name='post-id' value='$post_id' />\n" );
+	if( $flavor == "room" )
+		print( "<input type='hidden' name='room-id' value='$post_id' />\n" );
 	?>
 	<div style="display: table">
 		<div style="display: table-row">
@@ -54,15 +70,27 @@ function displayComposePane( $flavor, $db, $userID, $post_id = "" )
 				<?php
 				if( $flavor == "post" )
 					{
+					// Get world name, if applicable
+					$world_value = "";
+					if( isset( $_GET["i"] )  && $_GET["i"] != "" )
+						{
+						$world_value = get_db_value( $db, "SELECT display_name FROM worlds WHERE id = ?", "s", $_GET["i"] );
+						}
 					?>
-					World: <input type="text" name="post-world" id="post-world" checked="yes" value="" size="30" title="A topic of conversation" onchange="javascript:displayWorldSuggestions('post-world','post-restrictions','set-post-public');" onkeyup="javascript:displayWorldSuggestions('post-world','post-restrictions', 'set-post-public' );" />
+					World: <input type="text" name="post-world" id="post-world" value="<?php echo $world_value; ?>" size="30" title="A topic of conversation" onchange="javascript:displayWorldSuggestions('post-world','post-restrictions','set-post-public');" onkeyup="javascript:displayWorldSuggestions('post-world','post-restrictions', 'set-post-public' );" />
 					<input type="checkbox" name="public" id="set-post-public" checked="yes" value="yes" onchange="javascript:displayWorldSuggestions('post-world', 'post-restrictions', 'set-post-public' );" /> <label for="set-post-public" title="Public posts show up in both the world and your general feed. If unchecked, the post only shows up in the world.">Public</label><br />
 					<?php
 					} // end if flavor == "post"
 				?>
-				<div id="reply-to" style="display: none"></div>
+				<div id="<?php echo $in_reply_to_id; ?>" style="display: none"></div>
 				<div class="<?php echo $preview_class; ?>" id="<?php echo $preview_id; ?>"></div>
-				<div id="post-restrictions" class="post-restrictions">This post will appear in the "Everyone" stream, and in the streams of anyone who's added you to a Team.</div>
+				<div id="post-restrictions" class="post-restrictions"><?php
+				if( $world_value == "" )
+					print( "This post will appear in the \"Everything\" stream, and in the streams of anyone who's added you to a Team." );
+				else
+					print( "This post will appear in the \"$world_value\" World." );
+				?>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -105,15 +133,6 @@ function getAge( $timestamp )
 	return $age;
 	}
 
-function displayHeaderBannerAd( $db )
-	{
-	if( date("j") == 1 )
-		return;
-	$paid = get_db_value( $db, "SELECT paid FROM users WHERE username = ?", "s", $_SESSION["logged_in"] );
-	if( $paid == 1 )
-		return;
-	print( "<div class=\"banner-ad\"><img class=\"banner-ad\" width=\"728\" height=\"90\" alt=\"[Banner Ad]\" /></div>\n" );
-	}
 
 
 
@@ -131,6 +150,8 @@ function printError( $code )
 	$errors[152] = "Passwords must be at least 8 characters and must contain at least one upper-case letter, at least one number, and at least one symbol.";
 	$errors[201] = "That post does not exist.";
 	$errors[202] = "You can't delete that post.";
+	$errors[301] = "A room named <a href=\"room.php?r=" . $_GET["room_id"] . "\">" . $_GET["room_name"] . "</a> already exists. Please choose another name.";
+	$errors[302] = "You cannot create a room with that name. Please choose another name.";
 	if( array_key_exists( $code, $errors ) )
 		print( "<p class=\"error\">" . $errors[$code] . "</p>\n" );
 	}
@@ -145,7 +166,7 @@ function displayNavbar( $db, $userID )
 	<?php
 	$unread_pings = get_db_value( $db, "SELECT COUNT(*) FROM pings WHERE user = ? AND is_read = 0", "s", $userID );
 	print( "<p><a" );
-	if( $_SERVER["PHP_SELF"] == "pings.php" )
+	if( $_SERVER["PHP_SELF"] == "/pings.php" )
 		print( " style=\"font-weight: bold\"" );
 	print( " title=\"Notifications of new comments on posts you wrote or commented on.\" href=\"pings.php\">Pings" );
 	if( $unread_pings > 0 )
@@ -155,7 +176,8 @@ function displayNavbar( $db, $userID )
 	if( isset( $_GET["tab"] )  &&  $_GET["tab"] == "Everything" )
 		print( " style=\"font-weight: bold\"" );
 	print( " title=\"All posts marked public, from everyone. Kinda like Twitter!\"><a href=\"index.php?tab=Everything\">Everything</a></p>\n" );
-	print( "<p><a title=\"Modify membership of your teams and create new teams.\" href=\"teams.php\">Teams:</a></p>\n" );
+	// Teams
+	print( "<p><a title=\"Modify membership of your teams and create new teams.\" href=\"teams.php\">Teams</a></p>\n" );
 	print( "<p" );
 	if( $page_title == "Home"  &&  ! isset( $_GET["tab"] ) )
 		print( " style=\"font-weight: bold\"" );
@@ -175,10 +197,12 @@ function displayNavbar( $db, $userID )
 		print( "><a title=\"Posts from anyone in your '$team_name' team.\" href=\"index.php?tab=$team_id\">$team_name</a>" );
 		print( "</p>\n" );
 		}
+	// Worlds
 	print( "<p" );
-	if( isset( $_GET["t"] )  &&  $_GET["t"] == "*" )
+	if( $_SERVER["PHP_SELF"] == "/world.php"  &&
+	    ( isset( $_GET["i"] )  &&  $_GET["i"] == "*" ) )
 		print( " style=\"font-weight: bold\"" );
-	print( " title=\"View topics of conversation.\"><a href=\"world.php?world=*\">Worlds:</a></p>\n" );
+	print( " title=\"View topics of conversation.\"><a href=\"world.php?world=*\">Worlds</a></p>\n" );
 	$stmt = $db->stmt_init();
 	$sql = "SELECT worlds.id, worlds.display_name FROM user_worlds, worlds WHERE user_worlds.world = worlds.id AND user_worlds.user = ? ORDER BY worlds.display_name";
 	$stmt->prepare( $sql );
@@ -188,13 +212,42 @@ function displayNavbar( $db, $userID )
 	while( $stmt->fetch() )
 		{
 		print( "<p class=\"view-content\"" );
-		if( isset( $_GET["world"] )  &&  $_GET["world"] == $world_id )
+		if( $_SERVER["PHP_SELF"] == "/world.php"  &&
+		    ( isset( $_GET["i"] )  &&  $_GET["i"] == $world_id ) )
 			print( " style=\"font-weight: bold\"" );
-		print( "><a title=\"Posts in the '$world_name' world.\" href=\"world.php?t=$world_id\">$world_name</a>" );
+		print( "><a title=\"Posts in the '$world_name' world.\" href=\"world.php?i=$world_id\">$world_name</a>" );
 		print( "</p>\n" );
 		}
+	// Rooms
+	print( "<p" );
+	if( $_SERVER["PHP_SELF"] == "/room.php"  &&
+	    ( isset( $_GET["i"] )  &&  $_GET["i"] == "*" ) )
+		print( " style=\"font-weight: bold\"" );
+	print( " title=\"Browse private areas of conversation.\"><a href=\"room.php\">Rooms</a></p>\n" );
+	$stmt = $db->stmt_init();
+	$sql = "SELECT rooms.id, rooms.name FROM room_members JOIN rooms ON (room_members.room = rooms.id) WHERE room_members.user = ? ORDER BY rooms.name";
+	$stmt->prepare( $sql );
+	$stmt->bind_param( "s", $userID );
+	$stmt->execute();
+	$stmt->bind_result( $room_id, $room_name );
+	while( $stmt->fetch() )
+		{
+		$room_short_name = $room_name;
+		if( strlen($room_short_name) > 15 )
+			{
+			$room_short_name = substr( $room_short_name, 0, 15 ) . "...";
+			}
+		print( "<p class=\"view-content\"" );
+		if( $_SERVER["PHP_SELF"] == "/room.php"  &&
+		    ( ( isset( $_GET["i"] )  &&  $_GET["i"] == $room_id )  ||
+		      ( isset( $_POST["room-id"] )  &&  $_POST["room-id"] == $room_id )  ) )
+			print( " style=\"font-weight: bold\"" );
+		print( "><a title=\"Posts in the '$room_name' room.\" href=\"room.php?i=$room_id\">$room_short_name</a>" );
+		print( "</p>\n" );
+		}
+	// Hashtags
 	print( "<p><a " );
-	if( $_SERVER["PHP_SELF"] == "hashtag.php" )
+	if( $_SERVER["PHP_SELF"] == "/hashtag.php" )
 		print( " style=\"font-weight: bold\"" );
 	print( "href=\"hashtag.php\">Hashtags</a></p>\n" );
 	?>
@@ -209,6 +262,26 @@ function displayNavbar( $db, $userID )
 	<p><a href="formatting.php">More info</a></p>
 	</div>
 	<?php
+	}
+
+
+
+
+function getAuthorLink( $id, $visible_name, $real_name, $profile_public )
+	{
+	$result = "";
+	if( $profile_public )
+		$result .= "<a href=\"profile.php?i=$id\" ";
+	else
+		$result .= "<span ";
+	if( $visible_name == $real_name )
+		$result .= "class=\"uses-real-name\" ";
+	$result .= ">" . $visible_name;
+	if( $profile_public )
+		$result .= "</a>";
+	else
+		$result .= "</span>";
+	return $result;
 	}
 
 
@@ -246,6 +319,8 @@ function printAuthorInfo( $db, $userID, $author_id, $author_username, $author_vi
 	              "<input type=\"hidden\" name=\"user\" value=\"$author_id\" />\n";
 	if( isset( $_GET["tab"] ) )
 		$all_groups .= "<input type=\"hidden\" name=\"redirect\" value=\"" . $_SERVER["PHP_SELF"] . "?tab=" . $_GET["tab"] . "\" />\n";
+	elseif( isset( $_GET["i"] ) )
+		$all_groups .= "<input type=\"hidden\" name=\"redirect\" value=\"" . $_SERVER["PHP_SELF"] . "?i=" . $_GET["i"] . "\" />\n";
 	else
 		$all_groups .= "<input type=\"hidden\" name=\"redirect\" value=\"" . $_SERVER["PHP_SELF"] . "\" />\n";
 	$stmt->prepare( "SELECT id, name FROM user_teams WHERE user = ?" );
@@ -264,17 +339,7 @@ function printAuthorInfo( $db, $userID, $author_id, $author_username, $author_vi
 	if( $author_username != $_SESSION["logged_in"] )
 		print( "onmouseover=\"javascript:document.getElementById('author-details-$post_id').style.display='block';\" onmouseleave=\"javascript:document.getElementById('author-details-$post_id').style.display='none';document.getElementById('update-group-membership-$post_id').style.display='none';\"" );
 	print( "><img width=\"$avatar_size\" height=\"$avatar_size\" src=\"assets/images/avatars/$author_id\" /><br />" );
-	if( $author_public )
-		print( "<a href=\"profile.php?i=$author_id\" " );
-	else
-		print( "<span " );
-	if( $author_visible_name == $author_real_name )
-		print( "class=\"uses-real-name\" " );
-	print( ">" . $author_visible_name );
-	if( $author_public )
-		print( "</a>" );
-	else
-		print( "</span>" );
+	print getAuthorLink( $author_id, $author_visible_name, $author_real_name, $author_public );
 	print( "<br />\n" );
 	if( $author_username != $_SESSION["logged_in"]  &&  $userID != ""  &&  $userID != 0 )
 		{
@@ -289,6 +354,15 @@ function printAuthorInfo( $db, $userID, $author_id, $author_username, $author_vi
 
 
 
+function compressContent( $content )
+	{
+	$compressed_content = str_replace( "\r\n", "==[[BR]]==", $content );
+	$compressed_content = str_replace( "\n", "==[[BR]]==", $compressed_content );
+	$compressed_content = str_replace( "\r", "==[[BR]]==", $compressed_content );
+	$compressed_content = str_replace( "\"", "==[[QUOTE]]==", $compressed_content );
+	$compressed_content = addslashes( $compressed_content );
+	return $compressed_content;
+	}
 
 function displayPosts( $db, $db2, $sql, $userID, $max_posts, $param_types, $param1 = "", $param2 = "", $param3 = "" )
 	{
@@ -316,13 +390,6 @@ function displayPosts( $db, $db2, $sql, $userID, $max_posts, $param_types, $para
 			print( "<div class=\"post\">\n" );
 			printAuthorInfo( $db2, $userID, $author_id, $author_username, $author_visible_name, $author_real_name, $author_public, $post_id, "full" );
 			print( "<div class=\"post-content\" onmouseover=\"javascript:document.getElementById('post-navigation-$post_id').style.visibility='visible';\" onmouseleave=\"javascript:document.getElementById('post-navigation-$post_id').style.visibility='hidden';\">" );
-			/* // Display the groups to which this was posted.
-			$stmt2 = $db2->stmt_init();
-			$stmt2->prepare( "SELECT user_groups.name FROM post_groups, user_groups WHERE post_groups.post = ? AND post_groups.usergroup = user_groups.id" );
-			$stmt2->bind_param( "s", $post_id );
-			$stmt2->execute();
-			$stmt2->bind_result( $group );
-			while( $stmt2->fetch() ) { print( "Group: $group<br>\n" ); } */
 			print( "<div class=\"timestamp\"><a href=\"post.php?i=$post_id#main-post\">" . getAge( $created ) . "</a></div>\n" );
 			// Get world info
 			$world_name = "";
@@ -334,7 +401,7 @@ function displayPosts( $db, $db2, $sql, $userID, $max_posts, $param_types, $para
 			$p_stmt->fetch();
 			$p_stmt->close();
 			if( $world_name != "" )
-				print( "<div class=\"in-world\">In the world of <a href=\"world.php?t=$world_id\" class=\"world-name\">$world_name</a>:</div>\n" );
+				print( "<div class=\"in-world\">In the world of <a href=\"world.php?i=$world_id\" class=\"world-name\">$world_name</a>:</div>\n" );
 			// Get reply-to info
 			if( $parent_post_id != ""  &&  $userID != ""  &&  $userID != 0 )
 				{
@@ -373,9 +440,19 @@ function displayPosts( $db, $db2, $sql, $userID, $max_posts, $param_types, $para
 					print( "<div class=\"comments\">\n" );
 				while( $comments_stmt->fetch() )
 					{
-					print( "<div class=\"comment\">\n" );
+					print( "<div class=\"comment\"" );
+					if( $commenter_id == $userID )
+						print( "onmouseover=\"javascript:document.getElementById('comment-edit-link-$comment_id').style.display='block';\" onmouseleave=\"javascript:document.getElementById('comment-edit-link-$comment_id').style.display='none';\"" );
+					print( ">\n" );
 					printAuthorInfo( $db2, $userID, $commenter_id, $commenter_username, $commenter_visible_name, $commenter_real_name, $commenter_public, $comment_id, "comment" );
-					print( "<div class=\"comment-content\"><div class=\"timestamp\">" . getAge( $comment_created ) . "</div>" . formatPost( $comment_content ) . "</div>" );
+					$compressed_comment = compressContent( $comment_content );
+					print( "<div class=\"comment-content\"><div class=\"timestamp\">" );
+					if( $commenter_id == $userID )
+						print( "<a onclick=\"javascript:setComposeForEdit('$post_id','compose-post','$compressed_content');updatePreview('compose-post','post-preview');return false\" href=\"#\">" );
+					print( getAge( $comment_created ) );
+					if( $commenter_id == $userID )
+						print( "</a><br /><div id=\"comment-edit-link-$comment_id\" style=\"float: right; display: none;\"><a onclick=\"javascript:setComposeForEdit('$post_id','compose-comment-$post_id','$compressed_comment','$comment_id');updatePreview('compose-comment-$post_id','comment-preview-$post_id');return false;\" href=\"#\">Edit</a></div>" );
+					print( "</div>" . formatPost( $comment_content ) . "</div>" );
 					print( "</div>\n" ); // end .comment
 					}
 				if( $comments_stmt->num_rows > 0 )
@@ -387,12 +464,8 @@ function displayPosts( $db, $db2, $sql, $userID, $max_posts, $param_types, $para
 				print( "<div id=\"post-navigation-$post_id\" class=\"post-navigation\" style=\"visibility: hidden\"><a href=\"post.php?i=$post_id#main-post\">View conversation</a> &nbsp; " );
 				if( $author_id == $userID )
 					{
-					$compressed_content = str_replace( "\r\n", "==[[BR]]==", $content );
-					$compressed_content = str_replace( "\n", "==[[BR]]==", $compressed_content );
-					$compressed_content = str_replace( "\r", "==[[BR]]==", $compressed_content );
-					$compressed_content = str_replace( "\"", "==[[QUOTE]]==", $compressed_content );
-					$compressed_content = addslashes( $compressed_content );
-					print( "<a href=\"#\" onclick=\"javascript:setComposeForEdit('$post_id','compose-post','$compressed_content');updatePreview('compose-post','post-preview');return false;\">Edit</a> &nbsp; <a onclick=\"javascript:displayDelete('$post_id');return false;\" href=\"#\">Delete</a> &nbsp; " );
+					$compressed_content = compressContent( $content );
+					print( "<a href=\"#\" onclick=\"javascript:setComposeForEdit('$post_id','compose-post','$compressed_content','');updatePreview('compose-post','post-preview');return false;\">Edit</a> &nbsp; <a onclick=\"javascript:displayDelete('$post_id');return false;\" href=\"#\">Delete</a> &nbsp; " );
 					}
 				print( "<a onclick=\"javascript:setReplyTo('$post_id', '$author_visible_name', '$snippet');\" href=\"#top\">Reply with post</a> &nbsp; <a onclick=\"javascript:toggleComposePane('compose-tools-$post_id','compose-pane-$post_id','compose-comment-$post_id');return false;\" href=\"#\">Reply with comment</a>&nbsp;&nbsp;</div> <!-- .post-navigation -->\n" );
 				displayComposePane( "comment", $db, $userID, $post_id );
@@ -520,7 +593,7 @@ function formatPost( $text )
 	$text = preg_replace( "/(\s|^)_([\S\s]+?)_(\s|\n|\.|\,|\:|$)/", "$1<em>$2</em>$3", $text );
 	$text = preg_replace( "/\*([\S\s]+?)\*/", "<em>$1</em>", $text );
 	$text = preg_replace( "/(http|https):\/\/www\.youtube\.com\/watch\?v=([\S]+)/i", "<iframe type=\"text/html\" width=\"500\" height=\"320\" src=\"$1://www.youtube.com/embed/$2\" frameborder=\"0\"></iframe>", $text );
-	$text = preg_replace( "/(http|https):\/\/youtu\.be\/([\S]+)/i", "<iframe type=\"text/html\" width=\"500\" height=\"320\" src=\"$1://www.youtube.com/embed/$2\" frameborder=\"0\" />", $text );
+	$text = preg_replace( "/(http|https):\/\/youtu\.be\/([\S]+)/i", "<iframe type=\"text/html\" width=\"500\" height=\"320\" src=\"$1://www.youtube.com/embed/$2\" frameborder=\"0\"></iframe>", $text );
 	$text = preg_replace( "/(http|https):\/\/([\S]+)\.(jpg|jpeg|gif|png)\|([0-9]+)/", "<img src=\"$1://$2.$3\" style=\"width: $4px; max-width: 500px\" />", $text );
 	$text = preg_replace( "/(http|https):\/\/([\S]+)\.(jpg|jpeg|gif|png)([^\"])/", "<img src=\"$1://$2.$3\" style=\"max-width: 500px\" />$4", $text );
 	$text = preg_replace( "/(http|https):\/\/([A-Za-z0-9\.\%$&\?\#\/\-_=]+)(\s|\n|$)/im", "<a href=\"$1://$2\">$2</a>$3", $text );
@@ -673,6 +746,8 @@ function processWorldNameForBasic( $topic )
 function redirectToNewPage( $redirect )
 	{
 	$filename = $redirect;
+	// For purposes of making sure the redirect is valid,
+	// remove parameters and strip off initial "/"
 	if( strpos( $filename, '?' ) !== false )
 		$filename = substr( $filename, 0, strpos( $filename, '?' ) );
 	if( substr( $filename, 0, 1 ) == "/" )
@@ -737,6 +812,41 @@ function addPings( $db, $content_id, $ping_type, $userID )
 		$stmt->execute();
 		$stmt->close();
 		}
+	}
+
+function displayWorldOrRoomList( $db, $type, $display = "popular" )
+	{
+	// $type == "world" or "room"
+	$name_field = "name";
+	if( $type == "world" )
+		$name_field = "display_name";
+	if( $display == "popular" )
+		{
+		print( "<div title=\"These are the 25 $type" . "s with the most posts.\">" .
+		       "<p><strong>Popular</strong>: \n" );
+		$sql = "SELECT $type" . "s.id, $type" . "s.$name_field, (SELECT COUNT(*) FROM $type" . "_posts c WHERE c.$type = $type" . "s.id) AS post_count FROM $type" . "s " .
+		       "ORDER BY post_count DESC, $type" . "s.$name_field LIMIT 25";
+		}
+	else
+		{
+		$sql = "SELECT id, $name_field FROM $type" . "s ORDER BY $name_field";
+		}
+	$stmt = $db->stmt_init();
+	$stmt->prepare( $sql );
+	$stmt->execute();
+	if( $display == "popular" )
+		$stmt->bind_result( $id, $name, $count );
+	else
+		$stmt->bind_result( $id, $name );
+	while( $stmt->fetch() )
+		{
+		print( "<a href=\"$type.php?i=$id\" title=\"$count posts\">$name</a> " );
+		if( $display != "popular" )
+			print( "<br />\n" );
+		}
+	$stmt->close();
+	if( $display == "popular" )
+		print( "</div>\n" );
 	}
 
 

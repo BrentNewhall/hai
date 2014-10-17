@@ -12,14 +12,14 @@ displayNavbar( $db, $userID );
 
 print( "<h1>Pings</h1>\n" );
 
-$sql = "SELECT DISTINCT comments.content, posts.content, posts.id, pings.is_read, pings.created FROM pings JOIN comments ON (comments.id = pings.content_Id) JOIN posts ON (comments.post = posts.id) WHERE pings.user = ? ORDER BY pings.created DESC LIMIT 50";
+$sql = "SELECT DISTINCT comments.content, posts.content, posts.id, pings.is_read, pings.created, users.id, users.visible_name, users.real_name, users.profile_public FROM pings JOIN comments ON (comments.id = pings.content_Id) JOIN posts ON (comments.post = posts.id) JOIN users ON (comments.author = users.id) WHERE pings.user = ? ORDER BY pings.created DESC LIMIT 50";
 $stmt = $db->stmt_init();
 if( $stmt->prepare( $sql ) )
 	{
 	$stmt->bind_param( "s", $userID );
 	$stmt->execute();
 	$stmt->store_result();
-	$stmt->bind_result( $comment_content, $post_content, $post_id, $is_read, $ping_time );
+	$stmt->bind_result( $comment_content, $post_content, $post_id, $is_read, $ping_time, $author_id, $author_visible_name, $author_real_name, $author_profile_public );
 	while( $stmt->fetch() )
 		{
 		$comment_snippet = stripslashes( getPostSnippet( $comment_content ) );
@@ -33,8 +33,9 @@ if( $stmt->prepare( $sql ) )
 		print( "In <em><a " );
 		if( $is_read == 1 )
 			print( "class=\"ping-read\" " );
-		print( "href=\"post.php?i=$post_id\">$post_snippet</a></em><br />\n" );
-		print( "$comment_snippet</div>\n" );
+		print( "href=\"post.php?i=$post_id#main-post\">$post_snippet</a></em><br />\n" );
+		print( getAuthorLink( $author_id, $author_visible_name, $author_real_name, $author_profile_public ) );
+		print( " wrote, $comment_snippet</div>\n" );
 		}
 	$stmt->close();
 	// Mark all of this user's pings as read
