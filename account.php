@@ -189,8 +189,15 @@ $phones = getList( $db, "phone", $userID );
 	</tr>
 	<tr>
 		<td class="label">New Password</td>
-		<td><input type="password" name="new-password" /></td>
+		<td><input type="text" id="new-password" name="new-password" onkeyup="javascript:passwordHint('new-password','password-hint');"/></td>
 		<td>Entering a password here will change your password.</td>
+	</tr>
+	<tr>
+		<td></td>
+		<td colspan="2" id="password-hint">Passwords must have at least 8 characters,<br />
+		   and must contain at least 1 upper-case<br />
+		   character, at least 1 number, and at least 1<br />
+		   symbol.</td>
 	</tr>
 	<tr>
 		<td></td>

@@ -56,6 +56,22 @@ if( isset( $_POST["editing-post-id"] ) )
 	$stmt->bind_param( "ss", $_POST["compose-post"], $post_id );
 	$stmt->execute();
 	$stmt->close();
+	// If world is different,
+	$current_world_name_basic = processWorldNameForBasic( get_db_value( $db, "SELECT worlds.basic_name FROM worlds JOIN world_posts ON (world_posts.world = worlds.id AND world_posts.post = ?)", "s", $post_id ) );
+	$posted_world_name_basic  = processWorldNameForBasic( $_POST["post-world"] );
+	// Update world.
+	if( $current_world_name_basic != $posted_world_name_basic )
+		{
+		$result = update_db( $db, "DELETE FROM world_posts WHERE post = ?", "s", $post_id );
+		$new_world_id = get_db_value( $db, "SELECT id FROM worlds WHERE basic_name = ?", "s", $posted_world_name_basic );
+		if( $new_world_id == "" )
+			{
+			$posted_world_name_display = processWorldNameForDisplay( $_POST["post-world"] );
+			$new_world_id = update_db( $db, "INSERT INTO worlds (id, basic_name, display_name, class) VALUES (UUID(), ?, ?, UUID())", "ss", $posted_world_name_basic, $posted_world_name_display );
+			}
+		$result = update_db( $db, "INSERT INTO world_posts (id, world, post) VALUES (UUID(), ?, ?)", "ss", $new_world_id, $post_id );
+		$_POST["redirect"] = "world.php?i=$new_world_id";
+		}
 	// Redirect user
 	if( isset( $_POST["redirect"] )  &&  $_POST["redirect"] != "" )
 		redirectToNewPage( $_POST["redirect"] );

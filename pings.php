@@ -10,6 +10,8 @@ requireLogin( $db, $db2 );
 
 displayNavbar( $db, $userID );
 
+print( "<div id=\"display-pinged-post\"></div>\n" );
+
 print( "<h1>Pings</h1>\n" );
 
 $sql = "SELECT DISTINCT comments.content, posts.content, posts.id, pings.is_read, pings.created, users.id, users.visible_name, users.real_name, users.profile_public FROM pings JOIN comments ON (comments.id = pings.content_Id) JOIN posts ON (comments.post = posts.id) JOIN users ON (comments.author = users.id) WHERE pings.user = ? ORDER BY pings.created DESC LIMIT 50";
@@ -26,10 +28,12 @@ if( $stmt->prepare( $sql ) )
 		$post_snippet = stripslashes( getPostSnippet( $post_content ) );
 		$ping_time = getAge( $ping_time );
 		if( $is_read == 1 )
-			print( "<div class=\"ping ping-read\" >\n" );
+			print( "<div class=\"ping ping-read\"\n" );
 		else
-			print( "<div class=\"ping ping\">" );
-		print( "<div class=\"timestamp\">$ping_time</div>" );
+			print( "<div class=\"ping ping\"" );
+		print( " onmouseover=\"javascript:getPostForComment('$post_id','$userID','display-pinged-post');\"" );
+		print( " onmouseleave=\"javascript:document.getElementById('display-pinged-post').innerHTML='';\"" );
+		print( "><div class=\"timestamp\">$ping_time</div>" );
 		print( "In <em><a " );
 		if( $is_read == 1 )
 			print( "class=\"ping-read\" " );

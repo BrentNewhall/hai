@@ -49,12 +49,12 @@ function displayComposePane( $flavor, $db, $userID, $post_id = "" )
 	else
 		print( "<form action=\"index.php\" method=\"post\">\n" );
 	
-	if( isset( $_GET["tab"] ) )
+	/* if( isset( $_GET["tab"] ) )
 		print( "<input type=\"hidden\" name=\"redirect\" value=\"" . $_SERVER["PHP_SELF"] . "?tab=" . $_GET["tab"] . "\" />\n" );
 	elseif( isset( $_GET["i"] ) )
 		print( "<input type=\"hidden\" name=\"redirect\" value=\"" . $_SERVER["PHP_SELF"] . "?i=" . $_GET["i"] . "\" />\n" );
-	else
-		print( "<input type=\"hidden\" name=\"redirect\" value=\"" . $_SERVER["PHP_SELF"] . "\" />\n" );
+	else */
+	print( "<input type=\"hidden\" name=\"redirect\" value=\"" . getRedirectURL() . "\" />\n" );
 	if( $flavor == "comment" )
 		print( "<input type='hidden' name='post-id' value='$post_id' />\n" );
 	if( $flavor == "room" )
@@ -125,7 +125,13 @@ function getAge( $timestamp )
 				else
 					{
 					$months = intval( $minutes / 60 / 24 / 30 ); // Months
-					$age = $months . "M";
+					if( $months < 12 )
+						$age = $months . "mo";
+					else
+						{
+						$years = intval( $minutes / 12 / 60 / 24 / 30 ); // Years
+						$age = $years . "y";
+						}
 					}
 				}
 			}
@@ -177,7 +183,7 @@ function displayNavbar( $db, $userID )
 		print( " style=\"font-weight: bold\"" );
 	print( " title=\"All posts marked public, from everyone. Kinda like Twitter!\"><a href=\"index.php?tab=Everything\">Everything</a></p>\n" );
 	// Teams
-	print( "<p><a title=\"Modify membership of your teams and create new teams.\" href=\"teams.php\">Teams</a></p>\n" );
+	print( "<p class=\"view-header\"><a title=\"Modify membership of your teams and create new teams.\" href=\"teams.php\">Teams</a></p>\n" );
 	print( "<p" );
 	if( $page_title == "Home"  &&  ! isset( $_GET["tab"] ) )
 		print( " style=\"font-weight: bold\"" );
@@ -202,7 +208,7 @@ function displayNavbar( $db, $userID )
 	if( $_SERVER["PHP_SELF"] == "/world.php"  &&
 	    ( isset( $_GET["i"] )  &&  $_GET["i"] == "*" ) )
 		print( " style=\"font-weight: bold\"" );
-	print( " title=\"View topics of conversation.\"><a href=\"world.php?world=*\">Worlds</a></p>\n" );
+	print( " class=\"view-header\" title=\"View topics of conversation.\"><a href=\"world.php?world=*\">Worlds</a></p>\n" );
 	$stmt = $db->stmt_init();
 	$sql = "SELECT worlds.id, worlds.display_name FROM user_worlds, worlds WHERE user_worlds.world = worlds.id AND user_worlds.user = ? ORDER BY worlds.display_name";
 	$stmt->prepare( $sql );
@@ -223,7 +229,7 @@ function displayNavbar( $db, $userID )
 	if( $_SERVER["PHP_SELF"] == "/room.php"  &&
 	    ( isset( $_GET["i"] )  &&  $_GET["i"] == "*" ) )
 		print( " style=\"font-weight: bold\"" );
-	print( " title=\"Browse private areas of conversation.\"><a href=\"room.php\">Rooms</a></p>\n" );
+	print( " class=\"view-header\" title=\"Browse private areas of conversation.\"><a href=\"room.php\">Rooms</a></p>\n" );
 	$stmt = $db->stmt_init();
 	$sql = "SELECT rooms.id, rooms.name FROM room_members JOIN rooms ON (room_members.room = rooms.id) WHERE room_members.user = ? ORDER BY rooms.name";
 	$stmt->prepare( $sql );
@@ -246,7 +252,7 @@ function displayNavbar( $db, $userID )
 		print( "</p>\n" );
 		}
 	// Hashtags
-	print( "<p><a " );
+	print( "<p style=\"padding-top: 10px\"><a " );
 	if( $_SERVER["PHP_SELF"] == "/hashtag.php" )
 		print( " style=\"font-weight: bold\"" );
 	print( "href=\"hashtag.php\">Hashtags</a></p>\n" );
@@ -317,12 +323,12 @@ function printAuthorInfo( $db, $userID, $author_id, $author_username, $author_vi
 	$all_groups = "<form action=\"index.php\" method=\"post\">\n" .
 	              "<input type=\"hidden\" name=\"action\" value=\"update-group-membership\" />\n" .
 	              "<input type=\"hidden\" name=\"user\" value=\"$author_id\" />\n";
-	if( isset( $_GET["tab"] ) )
+	/* if( isset( $_GET["tab"] ) )
 		$all_groups .= "<input type=\"hidden\" name=\"redirect\" value=\"" . $_SERVER["PHP_SELF"] . "?tab=" . $_GET["tab"] . "\" />\n";
 	elseif( isset( $_GET["i"] ) )
 		$all_groups .= "<input type=\"hidden\" name=\"redirect\" value=\"" . $_SERVER["PHP_SELF"] . "?i=" . $_GET["i"] . "\" />\n";
-	else
-		$all_groups .= "<input type=\"hidden\" name=\"redirect\" value=\"" . $_SERVER["PHP_SELF"] . "\" />\n";
+	else */
+	$all_groups .= "<input type=\"hidden\" name=\"redirect\" value=\"" . getRedirectURL() . "\" />\n";
 	$stmt->prepare( "SELECT id, name FROM user_teams WHERE user = ?" );
 	$stmt->bind_param( "s", $userID);
 	$stmt->execute();
@@ -336,7 +342,7 @@ function printAuthorInfo( $db, $userID, $author_id, $author_username, $author_vi
 		}
 	$all_groups .= "<input type=\"submit\" value=\"Update\">\n</form>\n";
 	print(  "<div class=\"$author_class\" " );
-	if( $author_username != $_SESSION["logged_in"] )
+	if( $author_username != $_SESSION["logged_in"]  &&  $userID != "" )
 		print( "onmouseover=\"javascript:document.getElementById('author-details-$post_id').style.display='block';\" onmouseleave=\"javascript:document.getElementById('author-details-$post_id').style.display='none';document.getElementById('update-group-membership-$post_id').style.display='none';\"" );
 	print( "><img width=\"$avatar_size\" height=\"$avatar_size\" src=\"assets/images/avatars/$author_id\" /><br />" );
 	print getAuthorLink( $author_id, $author_visible_name, $author_real_name, $author_public );
@@ -364,6 +370,18 @@ function compressContent( $content )
 	return $compressed_content;
 	}
 
+
+
+function getRedirectURL()
+	{
+	$page = $_SERVER["PHP_SELF"];
+	if( isset( $_GET["tab"] ) )
+		$page .= "?tab=" . $_GET["tab"];
+	elseif( isset( $_GET["i"] ) )
+		$page .= "?i=" . $_GET["i"];
+	return $page;
+	}
+
 function displayPosts( $db, $db2, $sql, $userID, $max_posts, $param_types, $param1 = "", $param2 = "", $param3 = "" )
 	{
 	$output = "";
@@ -389,7 +407,10 @@ function displayPosts( $db, $db2, $sql, $userID, $max_posts, $param_types, $para
 			{
 			print( "<div class=\"post\">\n" );
 			printAuthorInfo( $db2, $userID, $author_id, $author_username, $author_visible_name, $author_real_name, $author_public, $post_id, "full" );
-			print( "<div class=\"post-content\" onmouseover=\"javascript:document.getElementById('post-navigation-$post_id').style.visibility='visible';\" onmouseleave=\"javascript:document.getElementById('post-navigation-$post_id').style.visibility='hidden';\">" );
+			print( "<div class=\"post-content\"" );
+			if( $userID != ""  &&  $userID != 0 )
+				print( " onmouseover=\"javascript:document.getElementById('post-navigation-$post_id').style.visibility='visible';\" onmouseleave=\"javascript:document.getElementById('post-navigation-$post_id').style.visibility='hidden';\"" );
+			print( ">" );
 			print( "<div class=\"timestamp\"><a href=\"post.php?i=$post_id#main-post\">" . getAge( $created ) . "</a></div>\n" );
 			// Get world info
 			$world_name = "";
@@ -466,6 +487,14 @@ function displayPosts( $db, $db2, $sql, $userID, $max_posts, $param_types, $para
 					{
 					$compressed_content = compressContent( $content );
 					print( "<a href=\"#\" onclick=\"javascript:setComposeForEdit('$post_id','compose-post','$compressed_content','');updatePreview('compose-post','post-preview');return false;\">Edit</a> &nbsp; <a onclick=\"javascript:displayDelete('$post_id');return false;\" href=\"#\">Delete</a> &nbsp; " );
+					}
+				else
+					{
+					$tracking = get_db_value( $db, "SELECT COUNT(*) FROM tracking WHERE user = ? AND post = ?", "ss", $userID, $post_id );
+					if( $tracking >= 1 )
+						print( "Tracking &nbsp; " );
+					else
+						print( "<a title=\"Get pinged when comments are added to this post.\" href=\"track.php?i=$post_id&redirect=" . getRedirectURL() . "\">Track</a> &nbsp; " );
 					}
 				print( "<a onclick=\"javascript:setReplyTo('$post_id', '$author_visible_name', '$snippet');\" href=\"#top\">Reply with post</a> &nbsp; <a onclick=\"javascript:toggleComposePane('compose-tools-$post_id','compose-pane-$post_id','compose-comment-$post_id');return false;\" href=\"#\">Reply with comment</a>&nbsp;&nbsp;</div> <!-- .post-navigation -->\n" );
 				displayComposePane( "comment", $db, $userID, $post_id );
@@ -620,8 +649,12 @@ function requireLogin( $db, $db2 )
 	</tr>
 	<tr>
 		<td class="label">Password</td>
-		<td><input type="text" id="login-password" name="password" value="<?php echo $password; ?>"/></td>
+		<td><input type="text" id="login-password" name="password" value="<?php echo $password; ?>" onkeyup="javascript:passwordHint('login-password','password-hint');"/></td>
 		<td><input type="checkbox" id="visible-checkbox" checked="yes" onclick="javascript:hidePasswordField('visible-checkbox','login-password');" /> <label for="visible-checkbox">Display password</label></td>
+	</tr>
+	<tr>
+		<td></td>
+		<td colspan="2" id="ppassword-hint"></td>
 	</tr>
 	<tr>
 		<td></td>
@@ -632,7 +665,7 @@ function requireLogin( $db, $db2 )
 		<td colspan="2" style="font-size: 10pt; padding-top: 50px;">
 		<p>To create a new account, enter your desired<br />username and password above and click here:</p>
 		<input type="submit" name="submit" value="Create account" />
-		<p>Passwords must be at least 8 characters,<br />
+		<p id="password-hint">Passwords must have at least 8 characters,<br />
 		   and must contain at least 1 upper-case<br />
 		   character, at least 1 number, and at least 1<br />
 		   symbol.</p>
@@ -781,11 +814,12 @@ function addPings( $db, $content_id, $ping_type, $userID )
 	$post_id = $content_id;
 	if( $ping_type == "c" )
 		$post_id = get_db_value( $db, "SELECT post FROM comments WHERE id = ?", "s", $content_id );
-	// Find author and all commenters
+	// Find author
 	$users_to_notify = array();
 	$author = get_db_value( $db, "SELECT author FROM posts WHERE id = ?", "s", $post_id );
 	if( $author != $userID )
 		array_push( $users_to_notify, $author );
+	// Find all commenters
 	$sql = "SELECT DISTINCT author FROM comments WHERE post = ?";
 	$stmt = $db->stmt_init();
 	$stmt->prepare( $sql );
@@ -799,6 +833,22 @@ function addPings( $db, $content_id, $ping_type, $userID )
 			array_push( $users_to_notify, $author );
 		}
 	$stmt->close();
+	// Find all tracks
+	$sql = "SELECT DISTINCT user FROM tracking WHERE post = ?";
+	$stmt = $db->stmt_init();
+	$stmt->prepare( $sql );
+	$stmt->bind_param( "s", $post_id );
+	$stmt->execute();
+	$stmt->bind_result( $author );
+	while( $stmt->fetch() )
+		{
+		// Add commenter, as long as it's not the current user
+		if( $author != $userID )
+			array_push( $users_to_notify, $author );
+		}
+	$stmt->close();
+	// Remove duplicates.
+	$users_to_notify = array_unique( $users_to_notify );
 	// Add a ping record for each author
 	foreach( $users_to_notify as $user_id )
 		{
