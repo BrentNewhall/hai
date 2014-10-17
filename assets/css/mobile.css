@@ -14,3 +14,7 @@ td	{
 .post	{
 	width: auto;
 	}
+/* The preview of a pinged post would completely fill the viewport. */
+#display-pinged-post	{
+	display: none;
+	}

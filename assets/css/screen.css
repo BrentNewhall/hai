@@ -62,6 +62,15 @@ h2	{
 	margin-top: 0px;
 	margin-bottom: 10px;
 	}
+#navbar p.view-header	{
+	margin-top: 5px;
+	margin-bottom: 2px;
+	}
+#navbar p.view-content	{
+	padding-left: 20px;
+	margin-top: 0px;
+	margin-bottom: 2px;
+	}
 #navbar a	{
 	color: #aaaaaa;
 	}
@@ -80,13 +89,6 @@ h2	{
 	margin-top: 0px;
 	margin-bottom: 10px;
 	}
-p.view-content	{
-	padding-left: 20px;
-	margin-top: 0px;
-	margin-bottom: 2px;
-	padding-top: 0px;
-	padding-bottom: 2px;
-	}
 .error	{
 	background-color: #eeeeee;
 	color: #aa0000;
@@ -99,13 +101,15 @@ p.view-content	{
 	}
 .post-container	{
 	display: table;
-	width: 100%;
+	wwidth: 100%;
+	width: inherit;
 	}
 .post	{
 	clear: both;
 	min-height: 100px;
 	display: table-row;
 	width: 100%;
+	background-color: white;
 	}
 .post-content	{
 	border-top: 1px solid #dddddd;
@@ -292,5 +296,13 @@ div.comment-author	{
 	float: right;
 	border: 1px solid #dddddd;
 	padding: 5px;
+	}
+#display-pinged-post	{
+	/* Used as the "preview pane" of a full post on pings. */
+	position: absolute;
+	top: 85px;
+	right: 0px;
+	width: 600px;
+	border: 1px solid #dddddd;
 	}
 

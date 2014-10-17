@@ -245,7 +245,7 @@ function setComposeForEdit( post_id, compose_div_id, content, comment_id )
 		}
 	}
 
-function sendData( params )
+function sendLoadMorePosts( params )
 	{
 	if (window.XMLHttpRequest)
    		// Create the object for browsers
@@ -279,10 +279,37 @@ function sendData( params )
 	xmlhttp.send(null);
 	}
 
-
 function loadMorePosts( tab, user_id, start_index )
 	{
-	sendData( "?tab=" + tab + "&u=" + user_id + "&index=" + start_index );
+	sendLoadMorePosts( "?tab=" + tab + "&u=" + user_id + "&index=" + start_index );
+	}
+
+function getPostForComment( post_id, user_id, target_div )
+	{
+	if (window.XMLHttpRequest)
+   		// Create the object for browsers
+   		xmlhttp = new XMLHttpRequest();
+   	else
+   		// Create the object for browser versions prior to IE 7
+   		xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+   	xmlhttp.onreadystatechange=function()
+   		{
+   		// if server is ready with the response
+   		if (xmlhttp.readyState==4)
+   			{
+   			// if everything is Ok on browser
+   			if(xmlhttp.status==200)
+   				{    
+				// Place response in target div
+				var div = document.getElementById(target_div);
+				div.innerHTML = xmlhttp.responseText;
+   				}
+   			}
+   		}
+   	//send the selected data to the php page
+   	xmlhttp.open("GET","get_post_for_comment.php?i=" + post_id + "&u=" + user_id,true);
+	xmlhttp.setRequestHeader("Content-type","application/x-www-form-urlencoded");
+	xmlhttp.send(null);
 	}
 
 function displayWorldSuggestions( source_div, restrictions_div, public_checkbox )
@@ -300,3 +327,38 @@ function displayWorldSuggestions( source_div, restrictions_div, public_checkbox 
 			document.getElementById(restrictions_div).innerHTML = "This post will appear in the \"" + text + "\" World.";
 		}
 	}
+
+function passwordHint( source_div, target_div )
+	{
+	var pwd = document.getElementById(source_div).value;
+	var div = document.getElementById(target_div);
+	var output = "Passwords must have ";
+	//at least 8 characters,<br />and must contain at least 1 upper-case<br />character, at least 1 number, and at least 1<br />symbol.</p>
+	if( pwd == "" )
+		{
+		div.innerHTML = output + " at least 8 characters,<br />and must contain at least 1 upper-case<br />character, at least 1 number, and at least 1<br />symbol.";
+		return;
+		}
+	if( pwd.length < 8 )
+		//div.innerHTML = "Password must have at least 8 characters.";
+		output += "<span style=\"color: red\">at least 8 characters</span>";
+	else
+		output += "<span style=\"color: green\">at least 8 characters</span>";
+	output += ",<br />and must contain ";
+	if( ! pwd.match( /[A-Z]/ ) )
+		output += "<span style=\"color: red\">at least 1 upper-case<br />character</span>";
+	else
+		output += "<span style=\"color: green\">at least 1 upper-case<br />character</span>";
+	output += ", ";
+	if( ! pwd.match( /[0-9]/ ) )
+		output += "<span style=\"color: red\">at least 1 number</span>";
+	else
+		output += "<span style=\"color: green\">at least 1 number</span>";
+	output += ", and ";
+	if( ! pwd.match( /[^A-Za-z0-9]/ ) )
+		output += "<span style=\"color: red\">at least 1<br />symbol</span>";
+	else
+		output += "<span style=\"color: green\">at least 1<br />symbol</span>";
+	div.innerHTML = output + ".";
+	}
+
