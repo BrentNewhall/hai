@@ -39,14 +39,10 @@ function hidePasswordField( checkbox_id, password_id )
 	{
 	if( document.getElementById(checkbox_id).checked )
 		{
-		//document.getElementById(password_id).style.color = "black";
-		//document.getElementById(password_id).style.background_color = "white";
 		document.getElementById(password_id).setAttribute("type","text");
 		}
 	else
 		{
-		//document.getElementById(password_id).style.color = "white";
-		//document.getElementById(password_id).style.background_color = "white";
 		document.getElementById(password_id).setAttribute("type","password");
 		}
 	}
@@ -312,7 +308,39 @@ function getPostForComment( post_id, user_id, target_div )
 	xmlhttp.send(null);
 	}
 
-function displayWorldSuggestions( source_div, restrictions_div, public_checkbox )
+function displayWorldSuggestions( source_div, target_div )
+	{
+	if (window.XMLHttpRequest)
+   		// Create the object for browsers
+   		xmlhttp = new XMLHttpRequest();
+   	else
+   		// Create the object for browser versions prior to IE 7
+   		xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+   	xmlhttp.onreadystatechange=function()
+   		{
+   		// if server is ready with the response
+   		if (xmlhttp.readyState==4)
+   			{
+   			// if everything is Ok on browser
+   			if(xmlhttp.status==200)
+   				{    
+				// Place response in target div
+				var div = document.getElementById(target_div);
+				div.innerHTML = xmlhttp.responseText;
+   				}
+   			}
+   		}
+   	//send the selected data to the php page
+	var world_name = document.getElementById(source_div).value;
+	if( world_name.length >= 1 )
+		{
+   		xmlhttp.open("GET","get_world_suggestions.php?w=" + world_name + "&f=" + source_div,true);
+		xmlhttp.setRequestHeader("Content-type","application/x-www-form-urlencoded");
+		xmlhttp.send(null);
+		}
+	}
+
+function displayWorldRestrictions( source_div, restrictions_div, public_checkbox )
 	{
 	var text = document.getElementById( source_div ).value;
 	if( text == "" )
@@ -360,5 +388,109 @@ function passwordHint( source_div, target_div )
 	else
 		output += "<span style=\"color: green\">at least 1<br />symbol</span>";
 	div.innerHTML = output + ".";
+	}
+
+// -----------
+// FILE UPLOAD
+// -----------
+
+// initialize
+function InitFileDrag( drag_target, user_id )
+	{
+	if (window.File && window.FileList && window.FileReader)
+		{
+		var filedrag = document.getElementById(drag_target);
+		// is XHR2 available?
+		var xhr = new XMLHttpRequest();
+		if (xhr.upload)
+			{
+			// file drop
+			filedrag.target_div = drag_target;
+			filedrag.user_id    = user_id;
+			filedrag.addEventListener("dragover", FileDragHover, false);
+			filedrag.addEventListener("dragleave", FileDragHover, false);
+			filedrag.addEventListener("drop", FileSelectHandler, false);
+			//filedrag.style.display = "block";
+			}
+		}
+	}
+
+// file drag hover
+function FileDragHover(e)
+	{
+	e.stopPropagation();
+	e.preventDefault();
+	//e.target.className += (e.type == "dragover" ? "hover" : "");
+	}
+
+// file selection
+function FileSelectHandler(e)
+	{
+	// cancel event and hover styling
+	FileDragHover(e);
+	// fetch FileList object
+	var files = e.target.files || e.dataTransfer.files;
+	// process all File objects
+	for (var i = 0, f; f = files[i]; i++)
+		{
+		ParseFile( f );
+		UploadFile( f, e.target.target_div, e.target.user_id );
+		}
+	}
+
+function ParseFile(file) {
+	//"<p>File information: <strong>" + file.name +
+	//"</strong> type: <strong>" + file.type +
+	//"</strong> size: <strong>" + file.size +
+	//"</strong> bytes</p>"
+	// display an image
+	if (file.type.indexOf("image") == 0) {
+		var reader = new FileReader();
+		/* reader.onload = function(e) {
+			Output(
+				//"<p><strong>" + file.name + ":</strong><br />" +
+				'<img src="' + e.target.result + '" style="max-width: 100px" />'
+			);
+			} */
+		reader.readAsDataURL(file);
+		}
+	}
+
+// upload JPEG files
+function UploadFile(file, target_div, user_id )
+	{
+	var xhr = new XMLHttpRequest();
+	if( xhr.upload  &&  file.size <= 50000000  &&
+	    ( file.type == "image/jpeg"  ||  file.type == "image/jpg"  ||
+	      file.type == "image/png"  ||  file.type == "image/gif" ) )
+		{
+   		xhr.onreadystatechange=function()
+   			{
+   			// if server is ready with the response
+   			if (xhr.readyState==4)
+   				{
+   				// if everything is Ok on browser
+   				if(xhr.status==200)
+   					{    
+					// Place response in target div
+					var text = document.getElementById(target_div).value;
+					text += "\n" + xhr.responseText + " ";
+					document.getElementById(target_div).value = text;
+   					}
+   				}
+   			}
+		// start upload
+		//alert( "Starting upload of " + file.name );
+		file_type = "";
+		if( file.type == "image/jpeg"  ||  file.type == "image/jpg" )
+			file_type = "jpg";
+		else if( file.type == "image/png" )
+			file_type = "png";
+		else if( file.type == "image/gif" )
+			file_type = "gif";
+		xhr.open("POST", "upload_image.php?type="+file_type+"&user="+user_id, true);
+		xhr.setRequestHeader("X_FILENAME", file.name);
+		xhr.send(file);
+		}
 	}
 

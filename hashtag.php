@@ -63,8 +63,7 @@ if( $userID != "" )
 	displayNavbar( $db, $userID );
 
 // Display posts that match that hashtag
-$sql = "SELECT DISTINCT posts.id, posts.content, posts.created, users.visible_name, users.real_name, users.username, users.profile_public, posts.author, posts.parent FROM posts " .
-	   "JOIN users ON (posts.author = users.id) " .
+$sql = getStandardSQLselect() .
 	   "WHERE posts.content LIKE ? AND posts.public = 1 " .
        "ORDER BY posts.created DESC LIMIT 25";
 

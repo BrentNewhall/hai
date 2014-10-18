@@ -24,8 +24,9 @@ if( ( isset( $_GET["i"] )  &&  $_GET["i"] != "" )  ||
 		{
 		// This room is hidden, so pretend it doesn't exist.
 		header( "Location: room.php\n\n" );
+		exit( 0 );
 		}
-	$page_title = "$room_name - World";
+	$page_title = "$room_name - Room";
 	}
 else
 	{
@@ -33,17 +34,43 @@ else
 	}
 
 // Join a room
-if( isset( $_GET["join"] )  &&  $userID != ""  &&  $room_id != "" )
+if( ( isset( $_GET["join"] )  ||  isset( $_POST["join"] ) )  &&
+    $userID != ""  &&  $room_id != "" )
 	{
 	$invite_only = get_db_value( $db, "SELECT invite_only FROM rooms WHERE id = ?", "s", $room_id );
 	if( $invite_only == 0 )
 		{
-		$sql = "INSERT INTO room_members (id, room, user, op) VALUES (UUID(), ?, ?, 0)";
-		$stmt = $db->stmt_init();
-		$stmt->prepare( $sql );
-		$stmt->bind_param( "ss", $room_id, $userID );
-		$stmt->execute();
-		$stmt->close();
+		$password = get_db_value( $db, "SELECT password FROM rooms WHERE id = ?", "s", $room_id );
+		if( isset( $_POST["password"] )  &&
+		    crypt( $_POST["password"], $crypt_salt ) == $password )
+			{
+			update_db( $db, "INSERT INTO room_members (id, room, user, op) VALUES (UUID(), ?, ?, 0)", "ss", $room_id, $userID );
+			}
+		else
+			{
+			// Print password field
+			require_once( "header.php" );
+			requireLogin( $db, $db2 );
+			displayNavbar( $db, $userID );
+			print( "<h1>Enter password</h1>\n" .
+			       "<form action=\"room.php\" method=\"post\">\n" .
+				   "<input type=\"hidden\" name=\"room-id\" value=\"$room_id\" />\n" .
+				   "<input type=\"password\" name=\"password\" />\n" .
+				   "<input type=\"submit\" name=\"join\" value=\"Join\" />\n" .
+				   "</form>\n" );
+			require_once( "footer.php" );
+			exit( 0 );
+			}
+		}
+	}
+
+// Leave a room
+if( isset( $_GET["leave"] )  &&  $userID != ""  &&  $room_id != "" )
+	{
+	$in_room = get_db_value( $db, "SELECT id FROM room_members WHERE room = ? and user = ?", "ss", $room_id, $userID );
+	if( $in_room != "" )
+		{
+		update_db( $db, "DELETE FROM room_members WHERE id = ?", "s", $in_room );
 		}
 	}
 
@@ -68,12 +95,56 @@ if( isset( $_POST['compose-post'] ) )
 	$stmt->close();
 	}
 
+// Kick user
+if( isset( $_GET["action"] )  &&  $_GET["action"] == "kick" )
+	{
+	// If user is a member of a room
+	$user_id = $_GET["user"];
+	$member = get_db_value( $db, "SELECT id FROM room_members WHERE room = ? AND user = ?", "ss", $room_id, $user_id );
+	if( $member != "" )
+		{
+		// Remove that record
+		update_db( $db, "DELETE FROM room_members WHERE id = ?", "s", $member );
+		update_db( $db, "INSERT INTO pings (id, user, created, content_type, content_id, is_read) VALUES (UUID(), ?, ?, 'rk', ?, 0)", "sis", $user_id, time(), $room_id );
+		}
+	}
+
+// Make user op
+if( isset( $_GET["action"] )  &&  $_GET["action"] == "op" )
+	{
+	// If user is a member of a room
+	$user_id = $_GET["user"];
+	$member = get_db_value( $db, "SELECT id FROM room_members WHERE room = ? AND user = ?", "ss", $room_id, $user_id );
+	if( $member != "" )
+		{
+		// Update room record
+		update_db( $db, "UPDATE room_members SET op = 1 WHERE id = ?", "s", $member );
+		// Ping the user that the user was opped
+		update_db( $db, "INSERT INTO pings (id, user, created, content_type, content_id, is_read) VALUES (UUID(), ?, ?, 'ro', ?, 0)", "sis", $user_id, time(), $room_id );
+		}
+	}
+
+// Deop user
+if( isset( $_GET["action"] )  &&  $_GET["action"] == "deop" )
+	{
+	// If user is a member of a room
+	$user_id = $_GET["user"];
+	$member = get_db_value( $db, "SELECT id FROM room_members WHERE room = ? AND user = ?", "ss", $room_id, $user_id );
+	if( $member != "" )
+		{
+		// Update room record
+		update_db( $db, "UPDATE room_members SET op = 0 WHERE id = ?", "s", $member );
+		// Ping the user that the user was opped
+		update_db( $db, "INSERT INTO pings (id, user, created, content_type, content_id, is_read) VALUES (UUID(), ?, ?, 'rd', ?, 0)", "sis", $user_id, time(), $room_id );
+		}
+	}
+
 // Create a new room
 if( isset( $_POST["new-room"] )  &&
    $_POST["new-room"] != "" )
    	{
 	$invalid_room_names = array( "", "all", "global", "public" );
-	$room_name = $_POST["new-room"];
+	$room_name = $_POST["room-name"];
 	$stmt = $db->stmt_init();
 	$stmt->prepare( "SELECT id, name FROM rooms" );
 	$stmt->execute();
@@ -90,6 +161,7 @@ if( isset( $_POST["new-room"] )  &&
 		$_GET["error"] = 302;
 	else
 		{
+		require_once( "functions.php" );
 		$public = 0;
 		if( isset( $_POST["public"] )  &&  $_POST["public"] != "" )
 			$public = 1;
@@ -103,8 +175,8 @@ if( isset( $_POST["new-room"] )  &&
 		if( isset( $_POST["topic"] )  &&  $_POST["topic"] != "" )
 			$topic = $_POST["topic"];
 		$password = "";
-		/* if( isset( $_POST["password"] )  &&  $_POST["password"] != "" )
-			$password = $_POST["password"]; */
+		if( isset( $_POST["password"] )  &&  $_POST["password"] != "" )
+			$password = $_POST["password"];
 		if( $password != ""  &&  ! testPassword( $password ) )
 			$_GET["error"] = 152;
 		else
@@ -126,6 +198,143 @@ if( isset( $_POST["new-room"] )  &&
 		}
 	}
 
+if( isset( $_POST["edit-room"] )  &&  $_POST["edit-room"] != "" )
+   	{
+	require_once( "functions.php" );
+	// Edit room.
+	$new_room_name = $_POST["room-name"];
+	$new_public = 0;
+	if( isset( $_POST["public"] )  &&  $_POST["public"] != "" )
+		$new_public = 1;
+	$new_hidden = 0;
+	if( isset( $_POST["hidden"] )  &&  $_POST["hidden"] != "" )
+		$new_hidden = 1;
+	$new_invite_only = 0;
+	if( isset( $_POST["invite-only"] )  &&  $_POST["invite-only"] != "" )
+		$new_invite_only = 1;
+	$new_topic = "";
+	if( isset( $_POST["topic"] )  &&  $_POST["topic"] != "" )
+		$new_topic = $_POST["topic"];
+	$new_password = "";
+	if( isset( $_POST["password"] )  &&  $_POST["password"] != "" )
+		$new_password = $_POST["password"];
+	// New name must not exist.
+	$new_name_exists = get_db_value( $db, "SELECT id FROM rooms WHERE name = ? AND id <> ?", "ss", $new_room_name, $room_id );
+	// New password must be valid.
+	if( $new_name_exists != "" )
+		print( "<p class=\"error\">That name already exists.</p>\n" );
+	elseif( $new_password != ""  &&  ! testPassword( $new_password ) )
+		print( "<p class=\"error\">Passwords must have at least 8 characters and must contain at least one upper-case letter, at least one number, and at least one symbol.</p>\n" );
+	else
+		{
+		if( $new_password != "" )
+			{
+			$encrypted_password = crypt( $new_password, $crypt_salt );
+			update_db( $db, "UPDATE rooms SET name = ?, topic = ?, public = ?, hidden = ?, invite_only = ?, password = ? WHERE id = ?", "ssiiiss", $new_room_name, $new_topic, $new_public, $new_hidden, $new_invite_only, $encrypted_password, $room_id );
+			}
+		else
+			update_db( $db, "UPDATE rooms SET name = ?, topic = ?, public = ?, hidden = ?, invite_only = ? WHERE id = ?", "ssiiis", $new_room_name, $new_topic, $new_public, $new_hidden, $new_invite_only, $room_id );
+		$room_topic = $new_topic;
+		}
+	}
+
+function displayOptionsTable( $room_id = "", $name = "", $topic = "", $public = "", $hidden = "", $invite_only = "", $password = "" )
+	{
+	print( "\t<hr />\n" );
+	if( $room_id == "" )
+		print( "\t<h2>Create a new room</h2>\n" );
+	else
+		print( "\t<h2>Edit this room</h2>\n" );
+	?>
+	<table border="0">
+		<form action="room.php" method="post">
+		<?php
+		if( $room_id != "" )
+			print( "\t\t<input type=\"hidden\" name=\"room-id\" value=\"$room_id\" />" );
+		?>
+		<tr>
+			<td class="label">Name</td>
+			<td><input type="text" name="room-name" size="20" value="<?php echo $name; ?>"/></td>
+			<td>Required. Must be unique across Hai.</td>
+		</tr>
+		<tr>
+			<td class="label">Topic</td>
+			<td><input type="text" name="topic" size="20" value="<?php echo $topic; ?>"/></td>
+			<td>Optional. What do you want to talk about first?</td>
+		</tr>
+		<tr>
+			<td></td>
+			<td>
+				<input type="checkbox" name="public" <?php
+				if( $public )
+					print( "checked=\"checked\" " );
+				?>id="room-public" value="yes" />
+				<label for="room-public">Public</label>
+			</td>
+			<td>If checked, this room will be publicly visible on the web, even to people not logged into Hai.</td>
+		</tr>
+		<tr>
+			<td></td>
+			<td>
+				<input type="checkbox" name="hidden" id="room-hidden" <?php
+				if( $hidden )
+					print( "checked=\"checked\" " );
+				?>value="yes" />
+				<label for="room-hidden">Hidden</label>
+			</td>
+			<td>If checked, this room will not appear in room lists or searches.</td>
+		</tr>
+		<tr>
+			<td></td>
+			<td>
+				<input type="checkbox" name="invite-only" id="invite-only" <?php
+				if( $invite_only )
+					print( "checked=\"checked\" " );
+				?>value="yes" />
+				<label for="invite-only">Invite-only</label>
+			</td>
+			<td>If checked, nobody can join this room on their own. Only moderators of this room will be able to add members.</td>
+		</tr>
+		<tr>
+			<td class="label">Password<?php
+			if( $password != "" )
+				print( " <strong>(set)</strong>" );
+			?></td>
+			<td><input type="text" name="password" size="20" value="" /></td>
+			<td>Optional. If filled in, users must enter this password to join the room.</td>
+		</tr>
+		<tr>
+			<td></td>
+			<?php
+			if( $room_id == "" )
+				print( "\t\t\t<td><input type=\"submit\" name=\"new-room\" value=\"Create room\" /></td>\n" );
+			else
+				print( "\t\t\t<td><input type=\"submit\" name=\"edit-room\" value=\"Edit room\" /></td>\n" );
+			?>
+		</tr>
+		</form>
+	</table>
+	<?php
+	if( $room_id != "" )
+		print( "<a href=\"add_user_to_room.php?i=$room_id\">Add users to this room</a>\n" );
+	}
+
+function displayOpInterface( $db, $userID, $room_id )
+	{
+	// If not an op, return nothing.
+	$is_op = get_db_value( $db, "SELECT op FROM room_members WHERE user = ? AND room = ?", "ss", $userID, $room_id );
+	if( ! $is_op )
+		return;
+	$stmt = $db->stmt_init();
+	$stmt->prepare( "SELECT name, topic, public, hidden, invite_only, password FROM rooms WHERE id = ?" );
+	$stmt->bind_param( "s", $room_id );
+	$stmt->execute();
+	$stmt->bind_result( $name, $topic, $public, $hidden, $invite_only, $password );
+	$stmt->fetch();
+	$stmt->close();
+	displayOptionsTable( $room_id, $name, $topic, $public, $hidden, $invite_only, $password );
+	}
+
 require_once( "header.php" );
 
 // Display popular rooms
@@ -141,7 +350,6 @@ if( $room_name != ""  &&  $userID != "" )
 	elseif( ! $invite_only )
 		print( "<div style=\"float: right\"><form action=\"room.php\" method=\"get\"><input type=\"hidden\" name=\"i\" value=\"$room_id\" /><input type=\"submit\" name=\"join\" value=\"Join\" /></form></div>\n" );
 	print( "<h1>$room_name</h1>\n" );
-	print( "<div id=\"room-topic\">$room_topic</div>\n" );
 	}
 else
 	print( "<h1>All Rooms</h1>\n" );
@@ -152,24 +360,44 @@ if( $userID != "" )
 if( $room_name != "" )
 	{
 	// Display members
+	$login_user_is_op = get_db_value( $db, "SELECT op FROM room_members WHERE room = ? AND user = ?", "ss", $room_id, $userID );
 	print( "<div class=\"room-members\" onload=\"javascript:alert('Hello');\">\n" .
-	       "Members<br />\n" );
+	       "Moderators:<br />\n" );
 	$sql = "SELECT users.id, users.visible_name, users.real_name, users.profile_public, room_members.op FROM room_members JOIN users ON (users.id = room_members.user) WHERE room_members.room = ? ORDER BY op DESC, users.visible_name";
 	$stmt = $db->stmt_init();
 	$stmt->prepare( $sql );
 	$stmt->bind_param( "s", $room_id );
 	$stmt->execute();
 	$stmt->bind_result( $user_id, $user_visible_name, $user_real_name, $user_profile_public, $user_op );
+	$last_op = 0;
 	while( $stmt->fetch() )
 		{
+		if( $last_op == 1  &&  $user_op == 0 )
+			print( "<div style=\"margin-top: 10px\">Members:</div>\n" );
 		if( $user_op == 1 )
-			print( "@<span title=\"The @ means this user is a moderator.\">" );
+			print( "<span title=\"This user is a moderator.\"" );
+		else
+			print( "<span title=\"This is a regular user.\"" );
+		if( $user_id == $userID )
+			print( ">" );
+		else
+			print( " onmouseover=\"javascript:document.getElementById('member-control-$user_id').style.display='block';\" onmouseleave=\"javascript:document.getElementById('member-control-$user_id').style.display='none';\">" );
 		if( $user_profile_public )
 			print( getAuthorLink( $user_id, $user_visible_name, $user_real_name, $user_profile_public ) . "<br />\n" );
 		else
 			print( getAuthorLink( $user_id, $user_visible_name, $user_real_name, $user_profile_public ) . "<br />\n" );
-		if( $user_op == 1 )
-			print( "</span>" );
+		if( $login_user_is_op == 1 )
+			{
+			print( "<div id=\"member-control-$user_id\" class=\"member-control\" title=\"Remove from room\" style=\"display: none\"><a href=\"room.php?action=kick&i=$room_id&user=$user_id\">Kick</a>" );
+			print( "&nbsp; " );
+			if( $user_op )
+				print( "<a title=\"Remove moderator privileges for this user\" href=\"room.php?action=deop&i=$room_id&user=$user_id\">Unmod</a>\n" );
+			else
+				print( "<a title=\"Make this user a moderator of this room\" href=\"room.php?action=op&i=$room_id&user=$user_id\">Make mod</a>\n" );
+			print( "</div>" );
+			}
+		print( "</span>" );
+		$last_op = $user_op;
 		}
 	print( "</div>\n" );
 	// Display compose pane
@@ -178,68 +406,27 @@ if( $room_name != "" )
 		{
 		displayComposePane( "room", $db, $userID, $room_id );
 		}
-	// Display posts that match that hashtag
-	$sql = "SELECT DISTINCT posts.id, posts.content, posts.created, users.visible_name, users.real_name, users.username, users.profile_public, posts.author, posts.parent FROM posts " .
-		   "JOIN users ON (posts.author = users.id) " .
+	// Display topic
+	print( "<div id=\"room-topic\">$room_topic</div>\n" );
+	// Display posts for this room
+	$sql = getStandardSQLselect() .
 		   "JOIN room_posts ON (room_posts.post = posts.id AND room_posts.room = ?) " .
 	       "ORDER BY posts.created DESC";
 	displayPosts( $db, $db2, $sql, $userID, 25, "s", $room_id );
+	displayOpInterface( $db, $userID, $room_id );
 	// Create an empty style element just to auto-expand the compose window.
 	print( "<style onload=\"javascript:toggleComposePane('compose-tools','compose-pane','compose-post');\"></style>\n" );
+	// Display "Leave" button
+	if( $is_member )
+		print( "<div style=\"text-align: right\"><form action=\"room.php\" method=\"get\"><input type=\"hidden\" name=\"i\" value=\"$room_id\" /><input type=\"submit\" name=\"leave\" value=\"Leave room\"></form></div>\n" );
 	}
 else
 	{
 	// All rooms
 	displayWorldOrRoomList( $db, "room", "all" );
+
+	displayOptionsTable();
 	?>
-	<h2>Create a new room</h2>
-	<table border="0">
-		<form action="room.php" method="post">
-		<tr>
-			<td class="label">Name</td>
-			<td><input type="text" name="new-room" size="20" /></td>
-			<td>Required. Must be unique across Hai.</td>
-		</tr>
-		<tr>
-			<td class="label">Topic</td>
-			<td><input type="text" name="topic" size="20" /></td>
-			<td>Optional. What do you want to talk about first?</td>
-		</tr>
-		<tr>
-			<td></td>
-			<td>
-				<input type="checkbox" name="public" checked="checked" id="room-public" value="yes" />
-				<label for="room-public">Public</label>
-			</td>
-			<td>If checked, this room will be publicly visible on the web, even to people not logged into Hai.</td>
-		</tr>
-		<tr>
-			<td></td>
-			<td>
-				<input type="checkbox" name="hidden" id="room-hidden" value="yes" />
-				<label for="room-hidden">Hidden</label>
-			</td>
-			<td>If checked, this room will not appear in room lists or searches.</td>
-		</tr>
-		<tr>
-			<td></td>
-			<td>
-				<input type="checkbox" name="invite-only" id="invite-only" value="yes" />
-				<label for="invite-only">Invite-only</label>
-			</td>
-			<td>If checked, nobody can join this room on their own. Only moderators of this room will be able to add members.</td>
-		</tr>
-		<!-- <tr>
-			<td class="label">Password</td>
-			<td><input type="text" name="password" size="20" /></td>
-			<td>Optional. If filled in, users must enter this password to join the room.</td>
-		</tr> -->
-		<tr>
-			<td></td>
-			<td><input type="submit" value="Create room" /></td>
-		</tr>
-		</form>
-	</table>
 	<p>You will be able to change any of these parameters later.</p>
 	<?php
 	}

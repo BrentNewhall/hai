@@ -2,7 +2,39 @@
 
 require_once( "database.php" );
 
+require_once( "functions/account.php" );
+require_once( "functions/posts.php" );
+
 $posts_per_page = 25;
+
+function getStandardSQLselect()
+	{
+	return "SELECT DISTINCT posts.id, posts.content, posts.created, users.visible_name, users.real_name, users.username, users.profile_public, posts.author, posts.parent FROM posts " .
+		   "JOIN users ON (posts.author = users.id) ";
+	}
+
+function getStandardSQL( $type )
+	{
+	global $posts_per_page;
+	if( $type == "Everything" )
+		return getStandardSQLselect() . 
+		       "WHERE posts.public = 1 " .
+		       "ORDER BY posts.created DESC LIMIT $posts_per_page";
+	elseif( $type == "team" )
+		return getStandardSQLselect() .
+		       "JOIN user_teams ug ON (ug.id = ? AND ug.user = ?) " . // ? = team ID, ? = userID
+		       "JOIN user_team_members ugm ON (ug.id = ugm.team AND ugm.user = posts.author) " .
+		       "LEFT JOIN posts parent_posts on (parent_posts.id = posts.parent) " .
+		       "ORDER BY posts.created DESC LIMIT $posts_per_page";
+	elseif( $type == "all" )
+		return getStandardSQLselect() .
+		       "LEFT JOIN posts parent_posts on (parent_posts.id = posts.parent) " .
+		       "LEFT JOIN user_teams ON (user_teams.user = ?) " .
+		       "LEFT JOIN user_team_members ON (user_team_members.team = user_teams.id )" .
+		       "WHERE posts.author = ? OR user_team_members.user = posts.author " .
+		       "ORDER BY posts.created DESC LIMIT $posts_per_page";
+	return "";
+	}
 
 function displayComposePane( $flavor, $db, $userID, $post_id = "" )
 	{
@@ -77,8 +109,9 @@ function displayComposePane( $flavor, $db, $userID, $post_id = "" )
 						$world_value = get_db_value( $db, "SELECT display_name FROM worlds WHERE id = ?", "s", $_GET["i"] );
 						}
 					?>
-					World: <input type="text" name="post-world" id="post-world" value="<?php echo $world_value; ?>" size="30" title="A topic of conversation" onchange="javascript:displayWorldSuggestions('post-world','post-restrictions','set-post-public');" onkeyup="javascript:displayWorldSuggestions('post-world','post-restrictions', 'set-post-public' );" />
-					<input type="checkbox" name="public" id="set-post-public" checked="yes" value="yes" onchange="javascript:displayWorldSuggestions('post-world', 'post-restrictions', 'set-post-public' );" /> <label for="set-post-public" title="Public posts show up in both the world and your general feed. If unchecked, the post only shows up in the world.">Public</label><br />
+					World: <input type="text" name="post-world" id="post-world" value="<?php echo $world_value; ?>" size="30" title="A topic of conversation" onchange="javascript:displayWorldRestrictions('post-world','post-restrictions','set-post-public');displayWorldSuggestions('post-world','world-hints');" onkeyup="javascript:displayWorldRestrictions('post-world','post-restrictions','set-post-public' );displayWorldSuggestions('post-world','world-hints');" />
+					<input type="checkbox" name="public" id="set-post-public" checked="yes" value="yes" onchange="javascript:displayWorldRestrictions('post-world','post-restrictions','set-post-public' );" /> <label for="set-post-public" title="Public posts show up in both the world and your general feed. If unchecked, the post only shows up in the world.">Public</label><br />
+					<div id="world-hints"></div>
 					<?php
 					} // end if flavor == "post"
 				?>
@@ -95,6 +128,9 @@ function displayComposePane( $flavor, $db, $userID, $post_id = "" )
 		</div>
 	</div>
 	</form>
+	<script type="text/javascript">
+	InitFileDrag( '<?php echo $compose_id; ?>', '<?php echo $userID; ?>' );
+	</script>
 	<?php
 	}
 
@@ -153,7 +189,7 @@ function printError( $code )
 	$errors[104] = "Error connecting to the database. Please try again later.";
 	$errors[150] = "Usernames can only contain letters, numbers, underscores (_) and dashes (-). Please try another username.";
 	$errors[151] = "That username already exists on Hai. Please choose another username.";
-	$errors[152] = "Passwords must be at least 8 characters and must contain at least one upper-case letter, at least one number, and at least one symbol.";
+	$errors[152] = "Passwords must have at least 8 characters and must contain at least one upper-case letter, at least one number, and at least one symbol.";
 	$errors[201] = "That post does not exist.";
 	$errors[202] = "You can't delete that post.";
 	$errors[301] = "A room named <a href=\"room.php?r=" . $_GET["room_id"] . "\">" . $_GET["room_name"] . "</a> already exists. Please choose another name.";
@@ -257,15 +293,16 @@ function displayNavbar( $db, $userID )
 		print( " style=\"font-weight: bold\"" );
 	print( "href=\"hashtag.php\">Hashtags</a></p>\n" );
 	?>
-	<p><a href="account.php">Account</a></p>
-	<p><a href="logout.php">Logout</a></p>
+	<p class="view-header"><a href="account.php">Account</a></p>
+	<p class="view-content"><a title="Any images you've uploaded to Hai will appear here." href="images.php">Images</a></p>
+	<p style="padding-top: 10px"><a href="logout.php">Logout</a></p>
 	</div>
 	<div id="formatting-hints">
 	<p>Post Formatting:</p>
 	<p><em>''italics''</em>, <em>*italics*</em>, <em>_italics_</em>, <em>[i]italics[/i]</em>, <strong>'''bold'''</strong>, <strong>**bold**</strong>, <strong>__bold__</strong>, <strong>[b]bold[/b]</strong>, <span style="text-decoration: underline">[u]underline[/u]</span>, <span style="color: blue">[color=blue]color[/color]</span>, <span style="font-size: 8pt">[size=8]size[/size]</span>, <a href="mailto:me@me.com">[email]me@me.com<br />[/email]</a>, <a href="http://test.com">http://test.com</a>.</p>
 	<p>Start a line with<br />"* " for a bulleted list; "# " for a numbered list.</p>
 	<p>Web, image, and YouTube addresses are automatically embedded.</p>
-	<p><a href="formatting.php">More info</a></p>
+	<p><a href="formatting.php">More</a></p>
 	</div>
 	<?php
 	}
@@ -381,380 +418,6 @@ function getRedirectURL()
 		$page .= "?i=" . $_GET["i"];
 	return $page;
 	}
-
-function displayPosts( $db, $db2, $sql, $userID, $max_posts, $param_types, $param1 = "", $param2 = "", $param3 = "" )
-	{
-	$output = "";
-	$stmt = $db->stmt_init();
-	//print "$param_types $param1 $param2<br>" ;
-	print( "<div id=\"post-container\" class=\"post-container\">\n" );
-	if( $stmt->prepare( $sql ) )
-		{
-		if( $param3 != "" )
-			$stmt->bind_param( $param_types, $param1, $param2, $param3 );
-		elseif( $param2 != "" )
-			$stmt->bind_param( $param_types, $param1, $param2 );
-		elseif( $param1 != "" )
-			$stmt->bind_param( $param_types, $param1 );
-		$stmt->execute();
-		print $db->error;
-		print $stmt->error;
-		$stmt->store_result();
-		$num_results = $stmt->num_rows;
-		$stmt->bind_result( $post_id, $content, $created, $author_visible_name, $author_real_name, $author_username, $author_public, $author_id, $parent_post_id );
-		$post_index = 0;
-		while( $stmt->fetch()  &&  $post_index < $max_posts )
-			{
-			print( "<div class=\"post\">\n" );
-			printAuthorInfo( $db2, $userID, $author_id, $author_username, $author_visible_name, $author_real_name, $author_public, $post_id, "full" );
-			print( "<div class=\"post-content\"" );
-			if( $userID != ""  &&  $userID != 0 )
-				print( " onmouseover=\"javascript:document.getElementById('post-navigation-$post_id').style.visibility='visible';\" onmouseleave=\"javascript:document.getElementById('post-navigation-$post_id').style.visibility='hidden';\"" );
-			print( ">" );
-			print( "<div class=\"timestamp\"><a href=\"post.php?i=$post_id#main-post\">" . getAge( $created ) . "</a></div>\n" );
-			// Get world info
-			$world_name = "";
-			$p_stmt = $db2->stmt_init();
-			$p_stmt = $db2->prepare( "SELECT worlds.id, worlds.display_name FROM worlds, world_posts WHERE world_posts.world = worlds.id AND world_posts.post = ?" );
-			$p_stmt->bind_param( "s", $post_id );
-			$p_stmt->execute();
-			$p_stmt->bind_result( $world_id, $world_name );
-			$p_stmt->fetch();
-			$p_stmt->close();
-			if( $world_name != "" )
-				print( "<div class=\"in-world\">In the world of <a href=\"world.php?i=$world_id\" class=\"world-name\">$world_name</a>:</div>\n" );
-			// Get reply-to info
-			if( $parent_post_id != ""  &&  $userID != ""  &&  $userID != 0 )
-				{
-				$p_stmt = $db2->stmt_init();
-				$p_stmt->prepare( "SELECT posts.content, users.visible_name, users.profile_public, users.id FROM posts, users WHERE posts.author = users.id AND posts.id = ?" );
-				$p_stmt->bind_param( "s", $parent_post_id );
-				$p_stmt->execute();
-				$p_stmt->bind_result( $parent_post_content, $parent_author_visible_name, $parent_author_profile_public, $parent_author_id );
-				if( $p_stmt->fetch() )
-					{
-					print( "<div class=\"in-reply-to\">In reply to " );
-					if( $parent_author_profile_public == 1 )
-						print( "<a href=\"profile.php?i=$parent_author_id\">$parent_author_visible_name</a>" );
-					else
-						print( "$parent_author_visible_name" );
-					print( "'s post <em><a href=\"post.php?i=$parent_post_id#main-post\">" . getPostSnippet( $parent_post_content ) . "</a></em></div>\n" );
-					}
-				$p_stmt->close();
-				}
-			// Display the actual post
-			print( formatPost( $content ) );
-			// Get comments
-			$comments_stmt = $db2->stmt_init();
-			$comments_sql = "SELECT comments.id, comments.content, comments.created, users.username, users.visible_name, users.real_name, users.profile_public, users.id " .
-			                "FROM comments " .
-			                "JOIN users ON (comments.author = users.id) " .
-							"WHERE comments.post = ? " .
-							"ORDER BY comments.created ASC LIMIT 10";
-			if( $comments_stmt->prepare( $comments_sql ) )
-				{
-				$comments_stmt->bind_param( "s", $post_id );
-				$comments_stmt->execute();
-				$comments_stmt->store_result();
-				$comments_stmt->bind_result( $comment_id, $comment_content, $comment_created, $commenter_username, $commenter_visible_name, $commenter_real_name, $commenter_public, $commenter_id );
-				if( $comments_stmt->num_rows > 0 )
-					print( "<div class=\"comments\">\n" );
-				while( $comments_stmt->fetch() )
-					{
-					print( "<div class=\"comment\"" );
-					if( $commenter_id == $userID )
-						print( "onmouseover=\"javascript:document.getElementById('comment-edit-link-$comment_id').style.display='block';\" onmouseleave=\"javascript:document.getElementById('comment-edit-link-$comment_id').style.display='none';\"" );
-					print( ">\n" );
-					printAuthorInfo( $db2, $userID, $commenter_id, $commenter_username, $commenter_visible_name, $commenter_real_name, $commenter_public, $comment_id, "comment" );
-					$compressed_comment = compressContent( $comment_content );
-					print( "<div class=\"comment-content\"><div class=\"timestamp\">" );
-					if( $commenter_id == $userID )
-						print( "<a onclick=\"javascript:setComposeForEdit('$post_id','compose-post','$compressed_content');updatePreview('compose-post','post-preview');return false\" href=\"#\">" );
-					print( getAge( $comment_created ) );
-					if( $commenter_id == $userID )
-						print( "</a><br /><div id=\"comment-edit-link-$comment_id\" style=\"float: right; display: none;\"><a onclick=\"javascript:setComposeForEdit('$post_id','compose-comment-$post_id','$compressed_comment','$comment_id');updatePreview('compose-comment-$post_id','comment-preview-$post_id');return false;\" href=\"#\">Edit</a></div>" );
-					print( "</div>" . formatPost( $comment_content ) . "</div>" );
-					print( "</div>\n" ); // end .comment
-					}
-				if( $comments_stmt->num_rows > 0 )
-					print( "</div>\n" ); // end .comments
-				}
-			$snippet = getPostSnippet( $content );
-			if( $userID != ""  &&  $userID != 0 )
-				{
-				print( "<div id=\"post-navigation-$post_id\" class=\"post-navigation\" style=\"visibility: hidden\"><a href=\"post.php?i=$post_id#main-post\">View conversation</a> &nbsp; " );
-				if( $author_id == $userID )
-					{
-					$compressed_content = compressContent( $content );
-					print( "<a href=\"#\" onclick=\"javascript:setComposeForEdit('$post_id','compose-post','$compressed_content','');updatePreview('compose-post','post-preview');return false;\">Edit</a> &nbsp; <a onclick=\"javascript:displayDelete('$post_id');return false;\" href=\"#\">Delete</a> &nbsp; " );
-					}
-				else
-					{
-					$tracking = get_db_value( $db, "SELECT COUNT(*) FROM tracking WHERE user = ? AND post = ?", "ss", $userID, $post_id );
-					if( $tracking >= 1 )
-						print( "Tracking &nbsp; " );
-					else
-						print( "<a title=\"Get pinged when comments are added to this post.\" href=\"track.php?i=$post_id&redirect=" . getRedirectURL() . "\">Track</a> &nbsp; " );
-					}
-				print( "<a onclick=\"javascript:setReplyTo('$post_id', '$author_visible_name', '$snippet');\" href=\"#top\">Reply with post</a> &nbsp; <a onclick=\"javascript:toggleComposePane('compose-tools-$post_id','compose-pane-$post_id','compose-comment-$post_id');return false;\" href=\"#\">Reply with comment</a>&nbsp;&nbsp;</div> <!-- .post-navigation -->\n" );
-				displayComposePane( "comment", $db, $userID, $post_id );
-				}
-			print( "</div>\n" ); // end .post-content
-			print( "</div>\n" ); // end .post
-			$post_index++;
-			}
-		}
-	if( $post_index < $num_results )
-		{
-		$tab = "";
-		if( isset( $_GET["tab"] ) )
-			$tab = $_GET["tab"];
-		print( "<div id=\"load-more-posts\">\n" );
-		print( "<button onclick=\"javascript:loadMorePosts('$tab','$userID',$post_index);return false;\">Load more results</button>\n" );
-		print( "</div>\n" );
-		}
-	print( "</div>\n" ); // end .post-container
-	}
-
-function formatPost( $text )
-	{
-	// Replace HTML with BBcode and remove the rest.
-	$text = preg_replace( "/<strong>|<b>/i", "[b]", $text );
-	$text = preg_replace( "/<\/strong>|<\/b>/i", "[/b]", $text );
-	$text = preg_replace( "/<em>|<i>/i", "[i]", $text );
-	$text = preg_replace( "/<\/em>|<\/i>/i", "[/i]", $text );
-	$text = preg_replace( "/<u>/i", "[u]", $text );
-	$text = preg_replace( "/<\/u>/i", "[/u]", $text );
-	$text = preg_replace( "/<a target=[\"'][\S]+?[\"'] href=[\"']([\S]+?)[\"']>([\S\s]+?)<\/a>/i", "[url=$1]$2[/url]", $text );
-	$text = preg_replace( "/<a href=[\"']([\S]+?)[\"'] target=[\"'][\S]+?[\"']>([\S\s]+?)<\/a>/i", "[url=$1]$2[/url]", $text );
-	$text = preg_replace( "/<a href=[\"']([\S]+?)[\"']>([\S\s]+?)<\/a>/i", "[url=$1]$2[/url]", $text );
-	$text = preg_replace( "/<img src=[\"']([\S]+?)[\"']>/i", "$1", $text );
-	$text = strip_tags( $text );
-	// Add breaks
-	$text = preg_replace( "/\n/", "<br />\n", $text );
-	// Process ordered and unordered lists
-	$lines = explode( "\n", $text );
-	$in_ul = 0;
-	$in_ol = 0;
-	$in_code = 0;
-	for( $i = 0; $i < count($lines); $i++ )
-		{
-		while( stripos( $lines[$i], "[CODE]" ) !== false  &&
-		       stripos( $lines[$i], "[/CODE]" ) !== false )
-			{
-			$lines[$i] = str_ireplace( "[CODE]", "<span class=\"style-code-snippet\">", $lines[$i] );
-			$lines[$i] = str_ireplace( "[/CODE]", "</span>", $lines[$i] );
-			}
-		if( stripos( $lines[$i], "[CODE]" ) !== false )
-			{
-			$in_code = 1;
-			$lines[$i] = str_ireplace( "[CODE]", "<div class=\"style-code-block\">Code:", $lines[$i] );
-			$lines[$i] = str_ireplace( "<br />", "", $lines[$i] );
-			$lines[$i] = str_ireplace( "<br></br>", "", $lines[$i] );
-			}
-		elseif( stripos( $lines[$i], "[/CODE]" ) !== false )
-			{
-			$in_code = 0;
-			$lines[$i] = str_ireplace( "[/CODE]", "</div>", $lines[$i] );
-			$lines[$i] = str_ireplace( "<br />", "", $lines[$i] );
-			}
-		elseif( $in_code >= 1 )
-			{
-			$lines[$i] = str_replace( "<br />", "", $lines[$i] );
-			$lines[$i] = str_replace( "<br></br>", "", $lines[$i] );
-			$lines[$i] = "<span class=\"code-line-number\">" . str_pad( $in_code, 3, "0", STR_PAD_LEFT ) . "</span> " . $lines[$i];
-			$in_code++;
-			}
-		if( substr( $lines[$i], 0, 2 ) == "* " )
-			{
-			$lines[$i] = preg_replace( "/^\* /", "<li> ", $lines[$i] );
-			$lines[$i] = preg_replace( "/<br \/>$/", "</li> ", $lines[$i] );
-			if( $in_ul == 0 )
-				$lines[$i] = "<ul>" . $lines[$i];
-			$in_ul = 1;
-			}
-		elseif( $in_ul == 1 )
-			{
-			$lines[$i] = "</ul>" . $lines[$i];
-			$in_ul = 0;
-			}
-		if( substr( $lines[$i], 0, 2 ) == "# "  ||
-		    preg_match( "/^[0-9] /", $lines[$i] ) == 1 )
-			{
-			$lines[$i] = "<li> " . substr( $lines[$i], 2 );
-			$lines[$i] = preg_replace( "/<br \/>$/", "</li> ", $lines[$i] );
-			if( $in_ol == 0 )
-				$lines[$i] = "<ol>" . $lines[$i];
-			$in_ol = 1;
-			}
-		elseif( $in_ol == 1 )
-			{
-			$lines[$i] = "</ol>" . $lines[$i];
-			$in_ol = 0;
-			}
-		}
-	$text = implode( "\n", $lines );
-	if( $in_ul == 1 )
-		$text .= "</ul>";
-	if( $in_ol == 1 )
-		$text .= "</ol>";
-	// Process forum-style formatting
-	$text = preg_replace( "/\[B\]([\S\s]+?)\[\/B\]/i", "<strong>$1</strong>", $text );
-	$text = preg_replace( "/\[I\]([\S\s]+?)\[\/I\]/i", "<em>$1</em>", $text );
-	$text = preg_replace( "/\[U\]([\S\s]+?)\[\/U\]/i", "<span style=\"text-decoration: underline\">$1</span>", $text );
-	$text = preg_replace( "/\[COLOR=([\S]+?)\]([\S\s]+?)\[\/COLOR\]/i", "<span style=\"color: $1\">$2</span>", $text );
-	$text = preg_replace( "/\[SIZE=([\S]+?)\]([\S\s]+?)\[\/SIZE\]/i", "<span style=\"font-size: $1\">$2</span>", $text );
-	$text = preg_replace( "/\[FONT=([\S]+?)\]([\S\s]+?)\[\/FONT\]/i", "<span style=\"font-family: $1\">$2</span>", $text );
-	$text = preg_replace( "/\[ALIGN=(LEFT|CENTER|RIGHT)\]([\S\s]+?)\[\/ALIGN\]/i", "<div style=\"text-align: $1\">$2</div>", $text );
-	$text = preg_replace( "/\[INDENT\]([\S\s]+?)\[\/INDENT\]/i", "<div style=\"padding-left: 25px;\">$1</div>", $text );
-	$text = preg_replace( "/\[EMAIL\]([\S\s]+?)\[\/EMAIL\]/i", "<a href=\"mailto:$1\">$1</a>", $text );
-	$text = preg_replace( "/\[URL\]([\S\s]+?)\[\/URL\]/i", "<a href=\"$1\">$1</a>", $text );
-	$text = preg_replace( "/\[URL=([\S]+?)\]([\S\s]+?)\[\/URL\]/i", "<a href=\"$1\">$2</a>", $text );
-	$text = preg_replace( "/\[IMG\]([\S\s]+?)\[\/IMG\]/i", "<img src=\"$1\" style=\"max-width: 500px\" />", $text );
-	// Process other stuff
-	$text = preg_replace( "/<br \/>\n<br \/>\n<ul>/", "<br />\n<ul>", $text );
-	$text = preg_replace( "/<br \/>\n<br \/>\n<ol>/", "<br />\n<ol>", $text );
-	$text = preg_replace( "/'''([\S\s]+?)'''/", "<strong>$1</strong>", $text );
-	$text = preg_replace( "/''([\S\s]+?)''/", "<em>$1</em>", $text );
-	$text = preg_replace( "/(\s|^)__([\S\s]+?)__(\s|$)/", "$1<strong>$2</strong>$3", $text );
-	$text = preg_replace( "/\*\*([\S\s]+?)\*\*/", "<strong>$1</strong>", $text );
-	//$text = preg_replace( "/(\s|^)_([\S\s]+?)_(\s|\.|$)/", "$1<em>$2</em>$3", $text );
-	$text = preg_replace( "/(\s|^)_([\S\s]+?)_(\s|\n|\.|\,|\:|$)/", "$1<em>$2</em>$3", $text );
-	$text = preg_replace( "/\*([\S\s]+?)\*/", "<em>$1</em>", $text );
-	$text = preg_replace( "/(http|https):\/\/www\.youtube\.com\/watch\?v=([\S]+)/i", "<iframe type=\"text/html\" width=\"500\" height=\"320\" src=\"$1://www.youtube.com/embed/$2\" frameborder=\"0\"></iframe>", $text );
-	$text = preg_replace( "/(http|https):\/\/youtu\.be\/([\S]+)/i", "<iframe type=\"text/html\" width=\"500\" height=\"320\" src=\"$1://www.youtube.com/embed/$2\" frameborder=\"0\"></iframe>", $text );
-	$text = preg_replace( "/(http|https):\/\/([\S]+)\.(jpg|jpeg|gif|png)\|([0-9]+)/", "<img src=\"$1://$2.$3\" style=\"width: $4px; max-width: 500px\" />", $text );
-	$text = preg_replace( "/(http|https):\/\/([\S]+)\.(jpg|jpeg|gif|png)([^\"])/", "<img src=\"$1://$2.$3\" style=\"max-width: 500px\" />$4", $text );
-	$text = preg_replace( "/(http|https):\/\/([A-Za-z0-9\.\%$&\?\#\/\-_=]+)(\s|\n|$)/im", "<a href=\"$1://$2\">$2</a>$3", $text );
-	$text = preg_replace( "/(\s|^)#([A-Za-z0-9\-]+)/", "$1<a href=\"hashtag.php?tag=$2\">#$2</a>", $text );
-	return $text;
-	}
-
-function requireLogin( $db, $db2 )
-	{
-	if( ! isset( $_SESSION["logged_in"] ) )
-		{
-		/* if( isset( $_GET["error"] ) )
-			printError( $_GET["error"] ); */
-		$username = "";
-		if( isset( $_GET["username"] ) )
-			$username = $_GET["username"];
-?>
-<h2>Log in</h2>
-<form action="login.php" method="post">
-<table border="0" style="margin: auto; padding-top: 25px">
-	<tr>
-		<td class="label">Username</td>
-		<td><input type="text" name="username" value="<?php echo $username; ?>"/></td>
-	</tr>
-	<tr>
-		<td class="label">Password</td>
-		<td><input type="text" id="login-password" name="password" value="<?php echo $password; ?>" onkeyup="javascript:passwordHint('login-password','password-hint');"/></td>
-		<td><input type="checkbox" id="visible-checkbox" checked="yes" onclick="javascript:hidePasswordField('visible-checkbox','login-password');" /> <label for="visible-checkbox">Display password</label></td>
-	</tr>
-	<tr>
-		<td></td>
-		<td colspan="2" id="ppassword-hint"></td>
-	</tr>
-	<tr>
-		<td></td>
-		<td><input type="submit" name="submit" value="Log in" /></td>
-	</tr>
-	<tr>
-		<td></td>
-		<td colspan="2" style="font-size: 10pt; padding-top: 50px;">
-		<p>To create a new account, enter your desired<br />username and password above and click here:</p>
-		<input type="submit" name="submit" value="Create account" />
-		<p id="password-hint">Passwords must have at least 8 characters,<br />
-		   and must contain at least 1 upper-case<br />
-		   character, at least 1 number, and at least 1<br />
-		   symbol.</p>
-		</td>
-	</tr>
-</table>
-</form>
-<p><a href="recover.php">Recover your password</a></p>
-<h2>Recent Public Posts</h2>
-<?php
-		$sql = "SELECT DISTINCT posts.id, posts.content, posts.created, " .
-		       "users.visible_name, users.real_name, users.username, " .
-			   "users.profile_public, posts.author, posts.parent FROM posts " .
-			   "JOIN users ON (posts.author = users.id) " .
-			   "WHERE posts.public = 1 " .
-		       "ORDER BY posts.created DESC";
-		displayPosts( $db, $db2, $sql, 0, 10, "none" );
-		require_once( "footer.php" );
-		exit( 0 );
-		} // end if logged_in session variable unset
-	} // end requireLogin()
-
-
-
-function testPassword( $password )
-	{
-	if( ( ! preg_match( "/[A-Z]/", $password ) )  ||
-	    ( ! preg_match( "/[0-9]/", $password ) )  ||
-	    ( ! preg_match( "/[!@#$%^&\*\(\)\-_=+\[{\]}\\|;:'\",<\.>\/\?]/", $password ) ) )
-		return 0;
-	return 1;
-	}
-
-
-
-
-function createAccount( $db, $username, $password )
-	{
-	if( preg_match( "/[^A-Za-z0-9\_\-]/", $username ) )
-		{
-		header( "Location: index.php?error=150\n\n" );
-		exit(1);
-		}
-	if( ! testPassword( $password ) )
-		{
-		header( "Location: index.php?error=152\n\n" );
-		exit(1);
-		}
-	$stmt = $db->stmt_init();
-	if( $stmt->prepare( "SELECT username FROM users WHERE username = ?" ) )
-		{
-		$stmt->bind_param( "s", $username );
-		$stmt->execute();
-		$stmt->bind_result( $returned_username );
-		$stmt->fetch();
-		if( $returned_username == $username )
-			{
-			header( "Location: index.php?error=151\n\n" );
-			exit(1);
-			}
-		else
-			{
-			if( $stmt->prepare( "INSERT INTO users (id, username, visible_name, password, created, paid, profile_public, admin) VALUES (UUID(), ?, ?, ?, ?, 0, 0, 0)" ) )
-				{
-				$stmt->bind_param( "ssss", $username, $username, $password, time() );
-				$stmt->execute();
-				$stmt->close();
-				$new_user_id = get_db_value( $db, "SELECT MAX(id) FROM users" );
-				$stmt = $db->stmt_init();
-				$stmt->prepare( "INSERT INTO user_teams (id, user, name) VALUES (UUID(), ?, 'Friends')" );
-				$stmt->bind_param( "s", $new_user_id );
-				$stmt->execute();
-				// Associate random avatar
-				$avatar = intval( rand(1, 12) );
-				if( file_exists( "assets/images/avatar$avatar.png" ) )
-					copy( "assets/images/avatar$avatar.png", "assets/images/avatars/$new_user_id" );
-				else
-					copy( "assets/images/avatar$avatar.jpg", "assets/images/avatars/$new_user_id" );
-				// Log in and go to home page.
-				$_SESSION["logged_in"] = $username;
-				header( "Location: index.php?message=Done\n\n" );
-				exit( 0 );
-				}
-			}
-		}
-	} // end createAccount()
-
-
-
 
 function processWorldNameForDisplay( $topic )
 	{
@@ -899,19 +562,6 @@ function displayWorldOrRoomList( $db, $type, $display = "popular" )
 		print( "</div>\n" );
 	}
 
-
-function getPostSnippet( $post_content )
-	{ // Returns a sane first line of the beginning of a post.
-	$snippet = trim( strip_tags( $post_content ) );
-	$max_length = 50;
-	if( strlen($snippet) > $max_length )
-		{
-		$snippet = substr( $snippet, 0, 50 );
-		$snippet .= "...";
-		}
-	$snippet = addslashes( $snippet );
-	return $snippet;
-	}
 
 function handleErrors( $errno, $errstr, $errfile, $errline )
 	{

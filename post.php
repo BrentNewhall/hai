@@ -53,11 +53,14 @@ function displayPostChildren( $db, $db2, $userID, $parent_post_id, $sql )
 if( $userID != "" )
 	displayNavbar( $db, $userID );
 
-$sql = "SELECT DISTINCT posts.id, posts.content, posts.created, users.visible_name, users.real_name, users.username, users.profile_public, posts.author, posts.parent FROM posts " .
-	   "JOIN users ON (posts.author = users.id) " .
-	   "WHERE posts.id = ?";
-displayPostWithHistory( $db, $db2, $userID, $post_id, $sql );
-displayPostChildren( $db, $db2, $userID, $post_id, $sql );
+$public = get_db_value( $db, "SELECT public FROM posts WHERE id = ?", "s", $post_id );
+
+if( $public )
+	{
+	$sql = getStandardSQLselect() . "WHERE posts.id = ?";
+	displayPostWithHistory( $db, $db2, $userID, $post_id, $sql );
+	displayPostChildren( $db, $db2, $userID, $post_id, $sql );
+	}
 
 require_once( "footer.php" );
 ?>

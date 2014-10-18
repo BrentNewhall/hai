@@ -288,14 +288,10 @@ div.comment-author	{
 /* Pings */
 .ping	{
 	border-top: 1px solid #dddddd;
+	min-height: 25px;
 	}
 .ping-read	{
 	color: #999999;
-	}
-.room-members	{
-	float: right;
-	border: 1px solid #dddddd;
-	padding: 5px;
 	}
 #display-pinged-post	{
 	/* Used as the "preview pane" of a full post on pings. */
@@ -304,5 +300,24 @@ div.comment-author	{
 	right: 0px;
 	width: 600px;
 	border: 1px solid #dddddd;
+	}
+/* Rooms */
+.room-members	{
+	float: right;
+	border: 1px solid #dddddd;
+	padding: 5px;
+	}
+#room-topic	{
+	border-top: 1px solid #dddddd;
+	border-bottom: 1px solid #dddddd;
+	color: #888888;
+	font-style: italic;
+	}
+.member-control	{
+	background-color: #eeeeee;
+	padding: 2px;
+	}
+#world-hints	{
+	background-color: #eeeeee;
 	}
 

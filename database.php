@@ -128,6 +128,37 @@ function get_db_value( $db, $query, $param_types = '', $param1 = '',
 	return $value;
 	}
 
+function update_db( $db, $query, $param_types = '', $param1 = '', 
+                    $param2 = '', $param3 = '', $param4 = '',
+					$param5 = '', $param6 = '', $param7 = '' )
+	{
+	$stmt = $db->stmt_init();
+	$stmt = $db->prepare( $query );
+	if( $stmt->error )
+		print $stmt->error;
+	if( $param7 != '' )
+		$stmt->bind_param( $param_types, $param1, $param2, $param3, $param4, 
+		                   $param5, $param6, $param7 );
+	elseif( $param6 != '' )
+		$stmt->bind_param( $param_types, $param1, $param2, $param3, $param4, 
+		                   $param5, $param6 );
+	elseif( $param5 != '' )
+		$stmt->bind_param( $param_types, $param1, $param2, $param3, $param4,
+		                   $param5 );
+	elseif( $param4 != '' )
+		$stmt->bind_param( $param_types, $param1, $param2, $param3, $param4 );
+	elseif( $param3 != '' )
+		$stmt->bind_param( $param_types, $param1, $param2, $param3 );
+	elseif( $param2 != '' )
+		$stmt->bind_param( $param_types, $param1, $param2 );
+	elseif( $param1 != '' )
+		$stmt->bind_param( $param_types, $param1 );
+	$stmt->execute();
+	$stmt->fetch();
+	$stmt->close();
+	}
+
+
 function getCarriers()
 	{
 	$a = array();

@@ -196,33 +196,18 @@ displayComposePane( "post", $db, $userID );
 if( isset( $_GET["tab"] )  &&  $_GET["tab"] == "Everything" )
 	{
 	print( "<h1>Everything</h1>\n" );
-	$sql = "SELECT DISTINCT posts.id, posts.content, posts.created, users.visible_name, users.real_name, users.username, users.profile_public, posts.author, posts.parent FROM posts " .
-		   "JOIN users ON (posts.author = users.id) " .
-		   "WHERE posts.public = 1 " .
-	       "ORDER BY posts.created DESC";
+	$sql = getStandardSQL( "Everything" );
 	}
 elseif( isset( $_GET["tab"] ) )
 	{
 	$team_name = get_db_value( $db, "SELECT name FROM user_teams WHERE id = ?", "s", $_GET["tab"] );
 	print( "<h1>$team_name</h1>\n" );
-	$sql = "SELECT DISTINCT posts.id, posts.content, posts.created, users.visible_name, users.real_name, users.username, users.profile_public, posts.author, parent_posts.id FROM posts " .
-		   "JOIN users ON (posts.author = users.id) " .
-		   // Where the author is a member of this group
-		   "JOIN user_teams ug ON (ug.id = ? AND ug.user = ?) " . // ? = team ID
-		   "JOIN user_team_members ugm ON (ug.id = ugm.team AND ugm.user = posts.author) " . // ? = userID
-		   "LEFT JOIN posts parent_posts on (parent_posts.id = posts.parent) " .
-	       "ORDER BY posts.created DESC";
+	$sql = getStandardSQL( "team" );
 	}
 else
 	{
 	print( "<h1>All</h1>\n" );
-	$sql = "SELECT DISTINCT posts.id, posts.content, posts.created, users.visible_name, users.real_name, users.username, users.profile_public, posts.author, parent_posts.id FROM posts " .
-		   "JOIN users ON (posts.author = users.id) " .
-		   "LEFT JOIN posts parent_posts on (parent_posts.id = posts.parent) " .
-		   "LEFT JOIN user_teams ON (user_teams.user = ?) " .
-		   "LEFT JOIN user_team_members ON (user_team_members.team = user_teams.id )" . //AND user_group_members.user = ?) " . // ? = userID
-		   "WHERE posts.author = ? OR user_team_members.user = posts.author " .
-	       "ORDER BY posts.created DESC";
+	$sql = getStandardSQL( "all" );
 	}
 
 //displayPosts( $db, $db2, $sql, $userID, 25, "ss", $userID, $_GET["tab"] );

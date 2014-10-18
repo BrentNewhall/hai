@@ -62,11 +62,12 @@ if( isset( $_POST["visible-name"] ) )
 	$real_name      = $_POST["real-name"];
 	$password       = $_POST["new-password"];
 	$profile_public = $_POST["profile-public"];
+	$about          = $_POST["about"];
 	if( $profile_public == "" )
 		$profile_public = 0;
 	else
 		$profile_public = 1;
-	$sql = "UPDATE users SET visible_name = ?, real_name = ?, profile_public = ?";
+	$sql = "UPDATE users SET visible_name = ?, real_name = ?, profile_public = ?, about = ?";
 	if( $password != ""  &&  ! testPassword( $password ) )
 		{
 		echo "<p class=\"error\">Passwords must be at least 8 characters and must contain at least one upper-case letter, at least one number, and at least one symbol.</p>";
@@ -82,10 +83,10 @@ if( isset( $_POST["visible-name"] ) )
 			if( $password != "" )
 				{
 				$pwd = crypt( $password, $crypt_salt );
-				$stmt->bind_param( "ssiss", $visible_name, $real_name, $profile_public, $pwd, $userID );
+				$stmt->bind_param( "ssisss", $visible_name, $real_name, $profile_public, $about, $pwd, $userID );
 				}
 			else
-				$stmt->bind_param( "ssis", $visible_name, $real_name, $profile_public, $userID );
+				$stmt->bind_param( "ssiss", $visible_name, $real_name, $profile_public, $about, $userID );
 			$stmt->execute();
 			$stmt->close();
 			// Wipe out all phone numbers
@@ -136,12 +137,12 @@ if( isset( $_POST["visible-name"] ) )
 
 
 $stmt = $db->stmt_init();
-$sql = "SELECT visible_name, real_name, profile_public FROM users WHERE username = ?";
+$sql = "SELECT visible_name, real_name, profile_public, about FROM users WHERE username = ?";
 if( $stmt->prepare( $sql ) )
 	{
 	$stmt->bind_param( "s", $_SESSION["logged_in"] );
 	$stmt->execute();
-	$stmt->bind_result( $visible_name, $real_name, $profile_public );
+	$stmt->bind_result( $visible_name, $real_name, $profile_public, $about );
 	$stmt->fetch();
 	$stmt->close();
 	}
@@ -279,6 +280,15 @@ if( $profile_public == 1 )
 ?>/> <label for="profile-public">Make my profile publicly visible on the web</label><br />
 <br />
 <input type="submit" value="Update" />
+<br />
+<br />
+
+<h2>About</h2>
+<textarea name="about" id="about-user" style="width: 510px; height: 125px" onkeyup="javascript:updatePreview('about-user','about-preview');"><?php echo $about; ?></textarea>
+<div id="about-preview" class="post-preview"></div>
+
+<br />
+<input type="submit" value="Update" />
 </form>
 
 <h2>Profile Image</h2>
@@ -299,6 +309,9 @@ JPG, GIF, or PNG only, please.
 <button>Import or Export Data</button> Not working yet.
 <br />
 <button>Delete Account</button>
+<script type="text/javascript">
+updatePreview('about-user','about-preview');
+</script>
 <?php
 
 require_once( "footer.php" );
