@@ -7,10 +7,21 @@ require_once( "functions/posts.php" );
 
 $posts_per_page = 25;
 
-function getStandardSQLselect()
+function getStandardSQLselect( $brodcast = "" )
 	{
-	return "SELECT DISTINCT posts.id, posts.content, posts.created, users.visible_name, users.real_name, users.username, users.profile_public, posts.author, posts.parent FROM posts " .
-		   "JOIN users ON (posts.author = users.id) ";
+	/* $text = "SELECT DISTINCT posts.id, posts.content, posts.created, " .
+	                        "users.visible_name, users.real_name, " .
+	                        "users.username, users.profile_public, " .
+	                        "posts.author, posts.parent, broadcasts.id " . */
+	$text = "SELECT DISTINCT posts.id, posts.content, " .
+							"GREATEST(IFNULL(posts.created,0),IFNULL(broadcasts.created,0)) AS bothcreated, " .
+	                        "users.visible_name, users.real_name, " .
+	                        "users.username, users.profile_public, " .
+	                        "posts.author, posts.parent, posts.editable, " .
+							"broadcasts.id " .
+	$text .= " FROM posts " .
+		     "JOIN users ON (posts.author = users.id) ";
+	return $text;
 	}
 
 function getStandardSQL( $type )
@@ -18,21 +29,27 @@ function getStandardSQL( $type )
 	global $posts_per_page;
 	if( $type == "Everything" )
 		return getStandardSQLselect() . 
+			   "LEFT JOIN broadcasts ON (broadcasts.post = posts.id) " .
 		       "WHERE posts.public = 1 " .
-		       "ORDER BY posts.created DESC LIMIT $posts_per_page";
+			   "AND posts.id NOT IN (SELECT post FROM room_posts) " .
+		       "ORDER BY bothcreated DESC LIMIT $posts_per_page";
 	elseif( $type == "team" )
 		return getStandardSQLselect() .
-		       "JOIN user_teams ug ON (ug.id = ? AND ug.user = ?) " . // ? = team ID, ? = userID
-		       "JOIN user_team_members ugm ON (ug.id = ugm.team AND ugm.user = posts.author) " .
+		       "JOIN user_teams ut ON (ut.id = ? AND ut.user = ?) " . // ? = team ID, ? = userID
+		       "JOIN user_team_members utm ON (ut.id = utm.team AND utm.user = posts.author) " .
 		       "LEFT JOIN posts parent_posts on (parent_posts.id = posts.parent) " .
-		       "ORDER BY posts.created DESC LIMIT $posts_per_page";
+			   "LEFT JOIN broadcasts ON (broadcasts.post = posts.id AND broadcasts.user = utm.user) " .
+			   "WHERE posts.id NOT IN (SELECT post FROM room_posts) " .
+		       "ORDER BY bothcreated DESC LIMIT $posts_per_page";
 	elseif( $type == "all" )
 		return getStandardSQLselect() .
 		       "LEFT JOIN posts parent_posts on (parent_posts.id = posts.parent) " .
 		       "LEFT JOIN user_teams ON (user_teams.user = ?) " .
 		       "LEFT JOIN user_team_members ON (user_team_members.team = user_teams.id )" .
+			   "LEFT JOIN broadcasts ON (broadcasts.post = posts.id AND broadcasts.user = user_team_members.user) " .
 		       "WHERE posts.author = ? OR user_team_members.user = posts.author " .
-		       "ORDER BY posts.created DESC LIMIT $posts_per_page";
+			   "AND posts.id NOT IN (SELECT post FROM room_posts) " .
+		       "ORDER BY bothcreated DESC LIMIT $posts_per_page";
 	return "";
 	}
 
@@ -97,8 +114,9 @@ function displayComposePane( $flavor, $db, $userID, $post_id = "" )
 			<div style="display: table-cell; width: <?php echo $button_area_width; ?>px; height: <?php echo $collapsed_height; ?>px; text-align: center; vertical-align: middle;" id="<?php echo $tools_id; ?>">
 				<button onclick="javascript:toggleComposePane('<?php echo $tools_id; ?>','<?php echo $compose_pane_id; ?>','<?php echo $compose_id; ?>'); return false;"><?php echo $write_button_label; ?></button>
 			</div>
-			<div style="width: <?php echo $width; ?>px; height: <?php echo $height; ?>px; background-color: white; display: none" id="<?php echo $compose_pane_id; ?>">
+			<div style="width: <?php echo $width; ?>px; background-color: white; display: none" id="<?php echo $compose_pane_id; ?>">
 				<textarea class="<?php echo $compose_class; ?>" name="compose-post" id="<?php echo $compose_id; ?>" onkeyup="javascript:updatePreview('<?php echo $compose_id; ?>','<?php echo $preview_id; ?>');" /></textarea><br />
+				<div class="progress-bar" id="progress-bar-<?php echo $compose_id; ?>"></div>
 				<?php
 				if( $flavor == "post" )
 					{
@@ -110,12 +128,14 @@ function displayComposePane( $flavor, $db, $userID, $post_id = "" )
 						}
 					?>
 					World: <input type="text" name="post-world" id="post-world" value="<?php echo $world_value; ?>" size="30" title="A topic of conversation" onchange="javascript:displayWorldRestrictions('post-world','post-restrictions','set-post-public');displayWorldSuggestions('post-world','world-hints');" onkeyup="javascript:displayWorldRestrictions('post-world','post-restrictions','set-post-public' );displayWorldSuggestions('post-world','world-hints');" />
-					<input type="checkbox" name="public" id="set-post-public" checked="yes" value="yes" onchange="javascript:displayWorldRestrictions('post-world','post-restrictions','set-post-public' );" /> <label for="set-post-public" title="Public posts show up in both the world and your general feed. If unchecked, the post only shows up in the world.">Public</label><br />
+					<input type="checkbox" name="public" id="set-post-public" checked="yes" value="yes" onchange="javascript:displayWorldRestrictions('post-world','post-restrictions','set-post-public' );" /> <label for="set-post-public" title="Public posts show up in both the world and your general feed. If unchecked, the post only shows up in the world.">Public</label>
+					<input type="checkbox" name="editable" id="set-post-editable" value="yes" /> <label for="set-post-editable" title="If checked, anyone logged in to Hai who can see this post can edit it.">Editable</label><br />
 					<div id="world-hints"></div>
 					<?php
 					} // end if flavor == "post"
 				?>
 				<div id="<?php echo $in_reply_to_id; ?>" style="display: none"></div>
+				<div class="reply-suggestions" id="<?php echo $preview_id; ?>-reply-suggestions"></div>
 				<div class="<?php echo $preview_class; ?>" id="<?php echo $preview_id; ?>"></div>
 				<div id="post-restrictions" class="post-restrictions"><?php
 				if( $world_value == "" )
@@ -157,12 +177,12 @@ function getAge( $timestamp )
 				{
 				$weeks = intval( $minutes / 60 / 24 / 7 ); // Weeks
 				if( $weeks < 4 )
-					$age = $weeks . "w";
+					$age = $weeks . "w " . intval($days - ($weeks*7)) . "d";
 				else
 					{
 					$months = intval( $minutes / 60 / 24 / 30 ); // Months
 					if( $months < 12 )
-						$age = $months . "mo";
+						$age = $months . "mo " . intval($weeks - ($months*4)) . "w";
 					else
 						{
 						$years = intval( $minutes / 12 / 60 / 24 / 30 ); // Years
@@ -206,38 +226,44 @@ function displayNavbar( $db, $userID )
 	?>
 	<div id="navbar">
 	<?php
-	$unread_pings = get_db_value( $db, "SELECT COUNT(*) FROM pings WHERE user = ? AND is_read = 0", "s", $userID );
-	print( "<p><a" );
-	if( $_SERVER["PHP_SELF"] == "/pings.php" )
-		print( " style=\"font-weight: bold\"" );
-	print( " title=\"Notifications of new comments on posts you wrote or commented on.\" href=\"pings.php\">Pings" );
-	if( $unread_pings > 0 )
-		print( " <strong>($unread_pings)</strong>" );
-	print( "</a></p>\n" );
+	if( $userID != "" )
+		{
+		$unread_pings = get_db_value( $db, "SELECT COUNT(*) FROM pings WHERE user = ? AND is_read = 0", "s", $userID );
+		print( "<p><a" );
+		if( $_SERVER["PHP_SELF"] == "/pings.php" )
+			print( " style=\"font-weight: bold\"" );
+		print( " title=\"Notifications of new comments on posts you wrote or commented on.\" href=\"pings.php\">Pings" );
+		if( $unread_pings > 0 )
+			print( " <strong>($unread_pings)</strong>" );
+		print( "</a></p>\n" );
+		}
 	print( "<p" );
 	if( isset( $_GET["tab"] )  &&  $_GET["tab"] == "Everything" )
 		print( " style=\"font-weight: bold\"" );
 	print( " title=\"All posts marked public, from everyone. Kinda like Twitter!\"><a href=\"index.php?tab=Everything\">Everything</a></p>\n" );
-	// Teams
-	print( "<p class=\"view-header\"><a title=\"Modify membership of your teams and create new teams.\" href=\"teams.php\">Teams</a></p>\n" );
-	print( "<p" );
-	if( $page_title == "Home"  &&  ! isset( $_GET["tab"] ) )
-		print( " style=\"font-weight: bold\"" );
-	print( " title=\"Posts from anyone in any of your teams.\" class=\"view-content\"><a href=\"index.php\">All</a></p>\n" );
-	$stmt = $db->stmt_init();
-	$sql = "SELECT id, name FROM user_teams WHERE user = ? ORDER BY name";
-	$stmt->prepare( $sql );
-	$stmt->bind_param( "s", $userID );
-	$stmt->execute();
-	$stmt->bind_result( $team_id, $team_name );
-	while( $stmt->fetch() )
+	if( $userID != "" )
 		{
-		print( "<p class=\"view-content\"" );
-		if( $page_title == "Home"  &&
-		    isset( $_GET["tab"] )  &&  $_GET["tab"] == $team_id )
+		// Teams
+		print( "<p class=\"view-header\"><a title=\"Modify membership of your teams and create new teams.\" href=\"teams.php\">Teams</a></p>\n" );
+		print( "<p" );
+		if( $page_title == "Home"  &&  ! isset( $_GET["tab"] ) )
 			print( " style=\"font-weight: bold\"" );
-		print( "><a title=\"Posts from anyone in your '$team_name' team.\" href=\"index.php?tab=$team_id\">$team_name</a>" );
-		print( "</p>\n" );
+		print( " title=\"Posts from anyone in any of your teams.\" class=\"view-content\"><a href=\"index.php\">All</a></p>\n" );
+		$stmt = $db->stmt_init();
+		$sql = "SELECT id, name FROM user_teams WHERE user = ? ORDER BY name";
+		$stmt->prepare( $sql );
+		$stmt->bind_param( "s", $userID );
+		$stmt->execute();
+		$stmt->bind_result( $team_id, $team_name );
+		while( $stmt->fetch() )
+			{
+			print( "<p class=\"view-content\"" );
+			if( $page_title == "Home"  &&
+		    	isset( $_GET["tab"] )  &&  $_GET["tab"] == $team_id )
+				print( " style=\"font-weight: bold\"" );
+			print( "><a title=\"Posts from anyone in your '$team_name' team.\" href=\"index.php?tab=$team_id\">$team_name</a>" );
+			print( "</p>\n" );
+			}
 		}
 	// Worlds
 	print( "<p" );
@@ -246,9 +272,13 @@ function displayNavbar( $db, $userID )
 		print( " style=\"font-weight: bold\"" );
 	print( " class=\"view-header\" title=\"View topics of conversation.\"><a href=\"world.php?world=*\">Worlds</a></p>\n" );
 	$stmt = $db->stmt_init();
-	$sql = "SELECT worlds.id, worlds.display_name FROM user_worlds, worlds WHERE user_worlds.world = worlds.id AND user_worlds.user = ? ORDER BY worlds.display_name";
+	if( $userID != "" )
+		$sql = "SELECT worlds.id, worlds.display_name FROM user_worlds, worlds WHERE user_worlds.world = worlds.id AND user_worlds.user = ? ORDER BY worlds.display_name";
+	else
+		$sql = "SELECT worlds.id, worlds.display_name FROM worlds ORDER BY worlds.display_name LIMIT 25";
 	$stmt->prepare( $sql );
-	$stmt->bind_param( "s", $userID );
+	if( $userID != "" )
+		$stmt->bind_param( "s", $userID );
 	$stmt->execute();
 	$stmt->bind_result( $world_id, $world_name );
 	while( $stmt->fetch() )
@@ -267,9 +297,13 @@ function displayNavbar( $db, $userID )
 		print( " style=\"font-weight: bold\"" );
 	print( " class=\"view-header\" title=\"Browse private areas of conversation.\"><a href=\"room.php\">Rooms</a></p>\n" );
 	$stmt = $db->stmt_init();
-	$sql = "SELECT rooms.id, rooms.name FROM room_members JOIN rooms ON (room_members.room = rooms.id) WHERE room_members.user = ? ORDER BY rooms.name";
+	if( $userID != "" )
+		$sql = "SELECT rooms.id, rooms.name FROM room_members JOIN rooms ON (room_members.room = rooms.id) WHERE room_members.user = ? ORDER BY rooms.name";
+	else
+		$sql = "SELECT rooms.id, rooms.name FROM rooms ORDER BY rooms.name LIMIT 25";
 	$stmt->prepare( $sql );
-	$stmt->bind_param( "s", $userID );
+	if( $userID != "" )
+		$stmt->bind_param( "s", $userID );
 	$stmt->execute();
 	$stmt->bind_result( $room_id, $room_name );
 	while( $stmt->fetch() )
@@ -292,16 +326,23 @@ function displayNavbar( $db, $userID )
 	if( $_SERVER["PHP_SELF"] == "/hashtag.php" )
 		print( " style=\"font-weight: bold\"" );
 	print( "href=\"hashtag.php\">Hashtags</a></p>\n" );
-	?>
-	<p class="view-header"><a href="account.php">Account</a></p>
-	<p class="view-content"><a title="Any images you've uploaded to Hai will appear here." href="images.php">Images</a></p>
-	<p style="padding-top: 10px"><a href="logout.php">Logout</a></p>
+	if( $userID != "" )
+		{
+		?>
+		<p class="view-header"><a href="account.php">Account</a></p>
+		<p class="view-content"><a title="Any images you've uploaded to Hai will appear here." href="media.php?type=images">Images</a></p>
+		<p class="view-content"><a title="Any videos you've uploaded to Hai will appear here." href="media.php?type=videos">Videos</a></p>
+		<p style="padding-top: 10px"><a href="logout.php">Logout</a></p>
+		<?php
+		}
+		?>
 	</div>
 	<div id="formatting-hints">
 	<p>Post Formatting:</p>
 	<p><em>''italics''</em>, <em>*italics*</em>, <em>_italics_</em>, <em>[i]italics[/i]</em>, <strong>'''bold'''</strong>, <strong>**bold**</strong>, <strong>__bold__</strong>, <strong>[b]bold[/b]</strong>, <span style="text-decoration: underline">[u]underline[/u]</span>, <span style="color: blue">[color=blue]color[/color]</span>, <span style="font-size: 8pt">[size=8]size[/size]</span>, <a href="mailto:me@me.com">[email]me@me.com<br />[/email]</a>, <a href="http://test.com">http://test.com</a>.</p>
 	<p>Start a line with<br />"* " for a bulleted list; "# " for a numbered list.</p>
 	<p>Web, image, and YouTube addresses are automatically embedded.</p>
+	<p>Drag and drop images into the text box to upload and embed them.</p>
 	<p><a href="formatting.php">More</a></p>
 	</div>
 	<?php
@@ -429,8 +470,6 @@ function processWorldNameForDisplay( $topic )
 
 function processWorldNameForBasic( $topic )
 	{
-	/* $topic = trim( $topic );
-	$topic = str_replace( "  ", " ", $topic ); */
 	$topic = processWorldNameForDisplay( $topic );
 	$topic = strtolower( $topic );
 	return $topic;

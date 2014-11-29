@@ -64,6 +64,7 @@ if( $userID != "" )
 
 // Display posts that match that hashtag
 $sql = getStandardSQLselect() .
+       "LEFT JOIN broadcasts ON (broadcasts.post = posts.id) " .
 	   "WHERE posts.content LIKE ? AND posts.public = 1 " .
        "ORDER BY posts.created DESC LIMIT 25";
 

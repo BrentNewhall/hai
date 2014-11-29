@@ -78,16 +78,26 @@ h2	{
 	position: absolute;
 	top: 100px;
 	right: 0px;
-	width: 120px;
+	width: 150px;
 	border: 1px solid #dddddd;
 	padding: 5px 10px 5px 5px;
 	color: #aaaaaa;
 	font-size: 9pt;
 	background-color: white;
+	display: none;
 	}
 #formatting-hints p	{
 	margin-top: 0px;
 	margin-bottom: 10px;
+	}
+#login-box	{
+	position: absolute;
+	padding: 5px;
+	top: 100px;
+	right: 0px;
+	width: 150px;
+	background-color: white;
+	border: 1px solid #dddddd;
 	}
 .error	{
 	background-color: #eeeeee;
@@ -125,6 +135,11 @@ h2	{
 	background-color: #eeeeee;
 	padding: 4px 0px 4px 0px;
 	font-size: 10pt;
+	}
+.edit-icon	{
+	float: right;
+	padding-left: 5px;
+	padding-bottom: 5px;
 	}
 .timestamp	{
 	float: right;
@@ -208,6 +223,7 @@ div.comment-author	{
 .author-details	{
 	font-size: 9pt;
 	background-color: #eeeeee;
+	width: 150px;
 	}
 .comments	{
 	margin-top: 15px;
@@ -255,9 +271,17 @@ div.comment-author	{
 .code-line-number	{
 	color: #888800;
 	}
+/* Widgets around posts */
 .in-reply-to	{
 	font-size: 9pt;
 	color: #888888;
+	}
+.in-reply-to a	{
+	color: #888888;
+	}
+.reply-name	{
+	font-style: italic;
+	color: #660000;
 	}
 .in-world	{
 	font-size: 9pt;
@@ -266,7 +290,8 @@ div.comment-author	{
 .world-name	{
 	font-weight: bold;
 	}
-.in-reply-to a	{
+.broadcast	{
+	font-size: 9pt;
 	color: #888888;
 	}
 #dialog-box	{
@@ -311,7 +336,6 @@ div.comment-author	{
 	border-top: 1px solid #dddddd;
 	border-bottom: 1px solid #dddddd;
 	color: #888888;
-	font-style: italic;
 	}
 .member-control	{
 	background-color: #eeeeee;
@@ -320,4 +344,32 @@ div.comment-author	{
 #world-hints	{
 	background-color: #eeeeee;
 	}
+.reply-suggestions	{
+	background-color: #eeeeee;
+	font-size: 13pt;
+	}
+.progress-bar p	{
+	display: block;
+	width: 500px;
+	padding: 2px 5px;
+	margin: 2px 0;
+	border: 1px solid #446;
+	background: #eee url("/assets/images/progress-bar.png") 100% 0 repeat-y;
+	}	
+.progress-bar p.success	{
+	background: #0c0 none 0 0 no-repeat;
+	}
+.progress-bar p.failure	{
+	background: #c00 none 0 0 no-repeat;
+	}
 
+/* Edits */
+#post-history	{
+	position: absolute;
+	top: 45px;
+	right: -280px;
+	width: 600px;
+	border: 1px solid #dddddd;
+	background-color: white;
+	z-index: 200;
+	}

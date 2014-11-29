@@ -24,7 +24,6 @@ if( $password == "" )
 if( isset( $_POST["submit"] )  &&  $_POST["submit"] == "Create account" )
 	{
 	require_once( "functions.php" );
-	$password = crypt( $password, $crypt_salt );
 	createAccount( $db, $username, $password );
 	exit( 0 );
 	}

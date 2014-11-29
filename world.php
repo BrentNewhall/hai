@@ -71,15 +71,14 @@ if( $world != ""  &&  $userID != "" )
 else
 	print( "<h1>All Worlds</h1>\n" );
 
-if( $userID != "" )
-	displayNavbar( $db, $userID );
+displayNavbar( $db, $userID );
 
 if( $world != "" )
 	{
 	displayComposePane( "post", $db, $userID );
 	// Display posts that match that hashtag
-	$sql = "SELECT DISTINCT posts.id, posts.content, posts.created, users.visible_name, users.real_name, users.username, users.profile_public, posts.author, posts.parent FROM posts " .
-		   "JOIN users ON (posts.author = users.id) " .
+	$sql = getStandardSQLselect() .
+	       "LEFT JOIN broadcasts ON (broadcasts.post = posts.id) " .
 		   "JOIN world_posts ON (world_posts.post = posts.id AND world_posts.world = ?) " .
 	       "ORDER BY posts.created DESC";
 	

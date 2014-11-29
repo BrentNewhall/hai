@@ -17,6 +17,30 @@ if( $post_id == ""  &&  strlen($post_id) != 36 )
 
 $this_page_post_id = $post_id;
 
+function printEdits( $db, $post_id )
+	{
+	$num_edits = get_db_value( $db, "SELECT COUNT(*) FROM post_history WHERE post = ?", "s", $post_id );
+	if( $num_edits > 0 )
+		{
+		print( "<div id=\"post-history\">\n" );
+		$sql = "SELECT original_content, edited, author, real_name, visible_name, profile_public FROM post_history JOIN users ON (post_history.author = users.id) WHERE post_history.post = ? ORDER BY edited DESC";
+		$stmt = $db->stmt_init();
+		$stmt->prepare( $sql );
+		print $stmt->error;
+		$stmt->bind_param( "s", $post_id );
+		$stmt->execute();
+		$stmt->bind_result( $content, $timestamp, $author, $real_name, $visible_name, $profile_public );
+		while( $stmt->fetch() )
+			{
+			print( "On " . date( "d M y" ) . ", " .
+			       getAuthorLink( $author, $visible_name, $real_name, $profile_public ) .
+			       " changed this post from:<br />\n" .
+			       formatPost( $content ) );
+			}
+		print( "</div>\n" );
+		}
+	}
+
 function displayPostWithHistory( $db, $db2, $userID, $post_id, $sql )
 	{
 	global $this_page_post_id;
@@ -26,6 +50,7 @@ function displayPostWithHistory( $db, $db2, $userID, $post_id, $sql )
 	if( $post_id == $this_page_post_id )
 		{
 		print( "<a name=\"main-post\"></a>\n" );
+		printEdits( $db, $post_id );
 		print( "<div style=\"border-left: 5px solid black\">\n" );
 		}
 	displayPosts( $db, $db2, $sql, $userID, 25, "s", $post_id );
@@ -54,10 +79,11 @@ if( $userID != "" )
 	displayNavbar( $db, $userID );
 
 $public = get_db_value( $db, "SELECT public FROM posts WHERE id = ?", "s", $post_id );
+$author = get_db_value( $db, "SELECT author FROM posts WHERE id = ?", "s", $post_id );
 
-if( $public )
+if( $public  ||  $author == $userID )
 	{
-	$sql = getStandardSQLselect() . "WHERE posts.id = ?";
+	$sql = getStandardSQLselect() . " LEFT JOIN broadcasts ON (broadcasts.id = posts.id) WHERE posts.id = ? ORDER BY bothcreated DESC";
 	displayPostWithHistory( $db, $db2, $userID, $post_id, $sql );
 	displayPostChildren( $db, $db2, $userID, $post_id, $sql );
 	}

@@ -14,9 +14,9 @@ if( isset( $_GET["u"] ) )
 if( $post_id == "" )
 	exit( 0 );
 
-$sql = "SELECT DISTINCT posts.id, posts.content, posts.created, users.visible_name, users.real_name, users.username, users.profile_public, posts.author, posts.parent FROM posts " .
-	   "JOIN users ON (posts.author = users.id) " .
-	   "WHERE posts.id = ? ";
+$sql = getStandardSQLselect() .
+	   "LEFT JOIN broadcasts ON (broadcasts.id = posts.id) " .
+       "WHERE posts.id = ? ORDER BY posts.created ";
 
 displayPosts( $db, $db2, $sql, $userID, 25, "s", $post_id );
 ?>

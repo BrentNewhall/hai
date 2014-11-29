@@ -77,22 +77,32 @@ if( isset( $_GET["leave"] )  &&  $userID != ""  &&  $room_id != "" )
 // Add post
 if( isset( $_POST['compose-post'] ) )
 	{
-	$sql = "INSERT INTO posts (id, author, created, content, " .
-	                          "parent, public) " .
-							  "VALUES (UUID(), ?, ?, ?, '', 1)";
-	$stmt = $db->stmt_init();
-	$stmt->prepare( $sql );
-	$stmt->bind_param( "sis", $userID, time(), $_POST["compose-post"] );
-	$stmt->execute();
-	$stmt->close();
-	$new_post_id = get_db_value( $db, "SELECT id FROM posts WHERE author = ? ORDER BY created DESC LIMIT 1", "s", $userID );
-	$sql = "INSERT INTO room_posts (id, room, post) " .
-							  "VALUES (UUID(), ?, ?)";
-	$stmt = $db->stmt_init();
-	$stmt->prepare( $sql );
-	$stmt->bind_param( "ss", $_POST["room-id"], $new_post_id );
-	$stmt->execute();
-	$stmt->close();
+	if( isset( $_POST["editing-post-id"] ) )
+		{
+		require_once( "functions.php" );
+		editPost( $db, $userID, $_POST["editing-post-id"], $_POST["compose-post"], "", 1 );
+		}
+	else
+		{
+		// The post's public flag inherits its value from the room.
+		$room_is_public = get_db_value( $db, "SELECT public FROM rooms WHERE id = ?", "s", $room_id );
+		$sql = "INSERT INTO posts (id, author, created, content, " .
+		                          "parent, public) " .
+								  "VALUES (UUID(), ?, ?, ?, '', ?)";
+		$stmt = $db->stmt_init();
+		$stmt->prepare( $sql );
+		$stmt->bind_param( "sisi", $userID, time(), $_POST["compose-post"], $room_is_public );
+		$stmt->execute();
+		$stmt->close();
+		$new_post_id = get_db_value( $db, "SELECT id FROM posts WHERE author = ? ORDER BY created DESC LIMIT 1", "s", $userID );
+		$sql = "INSERT INTO room_posts (id, room, post) " .
+								  "VALUES (UUID(), ?, ?)";
+		$stmt = $db->stmt_init();
+		$stmt->prepare( $sql );
+		$stmt->bind_param( "ss", $_POST["room-id"], $new_post_id );
+		$stmt->execute();
+		$stmt->close();
+		}
 	}
 
 // Kick user
@@ -162,13 +172,13 @@ if( isset( $_POST["new-room"] )  &&
 	else
 		{
 		require_once( "functions.php" );
-		$public = 0;
+		$public = "0";
 		if( isset( $_POST["public"] )  &&  $_POST["public"] != "" )
 			$public = 1;
-		$hidden = 0;
+		$hidden = "0";
 		if( isset( $_POST["hidden"] )  &&  $_POST["hidden"] != "" )
 			$hidden = 1;
-		$invite_only = 0;
+		$invite_only = "0";
 		if( isset( $_POST["invite-only"] )  &&  $_POST["invite-only"] != "" )
 			$invite_only = 1;
 		$topic = "";
@@ -184,7 +194,7 @@ if( isset( $_POST["new-room"] )  &&
 			$stmt = $db->stmt_init();
 			$sql = "INSERT INTO rooms (id, name, topic, public, hidden, invite_only, password) VALUES (UUID(), ?, ?, ?, ?, ?, ?)";
 			$stmt->prepare( $sql );
-			$stmt->bind_param( "ssiis", $room_name, $topic, $public, $hidden, $invite_only, $password );
+			$stmt->bind_param( "ssiiis", $room_name, $topic, $public, $hidden, $invite_only, $password );
 			$stmt->execute();
 			$stmt->close();
 			$room_id = get_db_value( $db, "SELECT id FROM rooms WHERE name = ?", "s", $room_name );
@@ -259,14 +269,18 @@ function displayOptionsTable( $room_id = "", $name = "", $topic = "", $public = 
 		</tr>
 		<tr>
 			<td class="label">Topic</td>
-			<td><input type="text" name="topic" size="20" value="<?php echo $topic; ?>"/></td>
-			<td>Optional. What do you want to talk about first?</td>
+			<!-- <td><input type="text" name="topic" size="20" value="<?php echo $topic; ?>"/></td> -->
+			<td><textarea name="topic" id="topic" style="width: 250px; height: 100px" onkeyup="javascript:updatePreview('topic','topic-preview');"><?php echo $topic; ?></textarea></td>
+			<td>Optional. What do you want to talk about first?
+			    <div class="reply-suggestions" id="topic-preview-reply-suggestions"></div><div style="width: 250px; height: 75px; border: 1px solid black" id="topic-preview"></div></td>
 		</tr>
+		<tr>
+			<td></td>
 		<tr>
 			<td></td>
 			<td>
 				<input type="checkbox" name="public" <?php
-				if( $public )
+				if( $public == 1  ||  $public == "" )
 					print( "checked=\"checked\" " );
 				?>id="room-public" value="yes" />
 				<label for="room-public">Public</label>
@@ -349,18 +363,21 @@ if( $room_name != ""  &&  $userID != "" )
 		print( "<div style=\"float: right\"><input type=\"submit\" name=\"subscribe\" value=\"Member\" disabled /></div>\n" );
 	elseif( ! $invite_only )
 		print( "<div style=\"float: right\"><form action=\"room.php\" method=\"get\"><input type=\"hidden\" name=\"i\" value=\"$room_id\" /><input type=\"submit\" name=\"join\" value=\"Join\" /></form></div>\n" );
-	print( "<h1>$room_name</h1>\n" );
 	}
+if( $room_name != "" )
+	print( "<h1>$room_name</h1>\n" );
 else
 	print( "<h1>All Rooms</h1>\n" );
 
-if( $userID != "" )
-	displayNavbar( $db, $userID );
+displayNavbar( $db, $userID );
 
 if( $room_name != "" )
 	{
 	// Display members
-	$login_user_is_op = get_db_value( $db, "SELECT op FROM room_members WHERE room = ? AND user = ?", "ss", $room_id, $userID );
+	if( $userID == "" )
+		$login_user_is_op = 0;
+	else
+		$login_user_is_op = get_db_value( $db, "SELECT op FROM room_members WHERE room = ? AND user = ?", "ss", $room_id, $userID );
 	print( "<div class=\"room-members\" onload=\"javascript:alert('Hello');\">\n" .
 	       "Moderators:<br />\n" );
 	$sql = "SELECT users.id, users.visible_name, users.real_name, users.profile_public, room_members.op FROM room_members JOIN users ON (users.id = room_members.user) WHERE room_members.room = ? ORDER BY op DESC, users.visible_name";
@@ -400,17 +417,20 @@ if( $room_name != "" )
 		$last_op = $user_op;
 		}
 	print( "</div>\n" );
+	$is_member = 0;
+	if( $userID != ""  &&  get_db_value( $db, "SELECT id FROM room_members WHERE room = ? AND user = ?", "ss", $room_id, $userID ) != "" )
+		$is_member = 1;
 	// Display compose pane
-	$is_member = get_db_value( $db, "SELECT COUNT(*) FROM room_members WHERE user = ? AND room = ?", "ss", $userID, $room_id );
-	if( $is_member )
+	if( $is_member  &&  $userID != "" )
 		{
 		displayComposePane( "room", $db, $userID, $room_id );
 		}
 	// Display topic
-	print( "<div id=\"room-topic\">$room_topic</div>\n" );
+	print( "<div id=\"room-topic\">" . formatPost( $room_topic ) . "</div>\n" );
 	// Display posts for this room
 	$sql = getStandardSQLselect() .
 		   "JOIN room_posts ON (room_posts.post = posts.id AND room_posts.room = ?) " .
+		   "LEFT JOIN broadcasts ON (broadcasts.id = posts.id) " .
 	       "ORDER BY posts.created DESC";
 	displayPosts( $db, $db2, $sql, $userID, 25, "s", $room_id );
 	displayOpInterface( $db, $userID, $room_id );
@@ -419,16 +439,29 @@ if( $room_name != "" )
 	// Display "Leave" button
 	if( $is_member )
 		print( "<div style=\"text-align: right\"><form action=\"room.php\" method=\"get\"><input type=\"hidden\" name=\"i\" value=\"$room_id\" /><input type=\"submit\" name=\"leave\" value=\"Leave room\"></form></div>\n" );
+	// Start auto-update of room
+	/* $latest_post_time = get_db_value( $db, "SELECT MAX(created) FROM posts WHERE room_id = ?", "s", $room_id );
+	print( "<script type='text/javascript'>\n" .
+	       "function loadLatestPostsLoop() {\n" .
+		   "  setTimeout(function() {\n" .
+		   "    loadLatestPosts('$room_id','$latest_post_time');\n" .
+		   "    loadLatestPostsLoop();\n" .
+		   "    }, 10 );\n" .
+		   "  }\n" .
+		   "</script>\n" ); */
 	}
 else
 	{
 	// All rooms
 	displayWorldOrRoomList( $db, "room", "all" );
 
-	displayOptionsTable();
-	?>
-	<p>You will be able to change any of these parameters later.</p>
-	<?php
+	if( $userID != "" )
+		{
+		displayOptionsTable();
+		?>
+		<p>You will be able to change any of these parameters later.</p>
+		<?php
+		}
 	}
 
 require_once( "footer.php" );

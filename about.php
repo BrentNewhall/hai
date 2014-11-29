@@ -23,7 +23,7 @@ if( $userID != "" )
   </ul>
 <li> Hai lets you own multiple accounts simultaneously.</li>
 <li class="not-yet"> Hai lets you export all your data. Hai lets you import all this data into any account you own. This lets you merge accounts.</li>
-<li class="notyet"> You can delete your account quickly and easily. When you do, all your information is completely deleted from our servers.</li>
+<li class="not-yet"> You can delete your account quickly and easily. When you do, all your information is completely deleted from our servers.</li>
 <Li> Hai does not filter which posts you see.</li>
 <li class="not-yet"> Hai lets you block anyone (their content does not appear for you, and they cannot interact with you in any way).</li>
 <li class="not-yet"> Hai supports HTML, photos, and videos in your posts. Hai can host photos and videos (you can also link and embed).</li>
@@ -33,7 +33,7 @@ if( $userID != "" )
 	<li class="not-yet"> Hai suggests helpful links for movie titles and book titles, so you don't have to italicize and/or link them to Wikipedia.</li>
 	</ul>
 <li> Every post and comment can be linked back to an originating post. You can view threads of posts this way.</li>
-<li class="not-yet"> All posts on Hai can be posted to public areas of interest (worlds) or private groups (rooms). In other words, you can restrict your posts to private conversations among only a few people.</li>
+<li> All posts on Hai can be posted to public areas of interest (worlds) or private groups (rooms). In other words, you can restrict your posts to private conversations among only a few people.</li>
 <li class="not-yet"> Hai's users pay Hai's bills. USD $2 per month gives you a "Sponsor" badge next to your avatar.</li>
 <li class="not-yet"> Hai lets you cross-post to Facebook and Twitter, if you desire.</li>
 <li class="not-yet"> Hai provides a robust RESTful API for posting and accessing Hai.</li>

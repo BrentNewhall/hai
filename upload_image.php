@@ -11,45 +11,34 @@ $user_id = "";
 if( isset( $_GET["user"] )  &&  $_GET["user"] != "" )
 	$user_id = $_GET["user"];
 
-function getGUID()
+function add_user_media( $db, $user_id, $filename, $type )
 	{
-	// This function is from http://guid.us/GUID/PHP
-    if (function_exists('com_create_guid'))
-		{
-        return com_create_guid();
-    	}
-	else
-		{
-        mt_srand((double)microtime()*10000);//optional for php 4.2.0 and up.
-        $charid = strtoupper(md5(uniqid(rand(), true)));
-        $hyphen = chr(45);// "-"
-        $uuid = substr($charid, 0, 8).$hyphen
-            .substr($charid, 8, 4).$hyphen
-            .substr($charid,12, 4).$hyphen
-            .substr($charid,16, 4).$hyphen
-            .substr($charid,20,12);
-        return $uuid;
-    	}
+	update_db( $db, "INSERT INTO user_media (id, created, user, filename, type) VALUES (UUID(), ?, ?, ?, '$type')", "iss", time(), $user_id, $filename );
 	}
-
-function add_user_image_record( $db, $user_id, $filename )
-	{
-	update_db( $db, "INSERT INTO user_images (id, user, filename) VALUES (UUID(), ?, ?)", "ss", $user_id, $filename );
-	}
-
 
 if ($fn)
 	{
-	$new_filename = getGUID() . "." . $file_type;
 	// AJAX call
-	file_put_contents(
-		'assets/images/uploads/' . $new_filename,
-		file_get_contents('php://input')
-	);
-	//echo "$fn uploaded.";
-	echo "http://hai.social/assets/images/uploads/$new_filename";
-	add_user_image_record( $db, $user_id, $new_filename );
-	exit();
+	$new_filename = getGUID() . "." . $file_type;
+	if( $file_type == "mp4" )
+		{
+		file_put_contents(
+			'assets/video/uploads/' . $new_filename,
+			file_get_contents('php://input')
+		);
+		add_user_media( $db, $user_id, $new_filename, "video" );
+		echo "http://hai.social/assets/video/uploads/$new_filename";
+		}
+	else
+		{
+		file_put_contents(
+			'assets/images/uploads/' . $new_filename,
+			file_get_contents('php://input')
+		);
+		//echo "$fn uploaded.";
+		add_user_media( $db, $user_id, $new_filename, "image" );
+		echo "http://hai.social/assets/images/uploads/$new_filename";
+		}
 	}
 else
 	{
@@ -61,13 +50,25 @@ else
 			{
 			$new_filename = getGUID() . "." . $file_type;
 			$fn = $files['name'][$id];
-			move_uploaded_file(
-				$files['tmp_name'][$id],
-				'assets/images/uploads/' . $new_filename
-			);
+			if( $file_type == "mp4" )
+				{
+				move_uploaded_file(
+					$files['tmp_name'][$id],
+					'assets/video/uploads/' . $new_filename
+				);
+				add_user_media_record( $db, $user_id, $new_filename, "video" );
+				echo "http://hai.social/assets/video/uploads/$new_filename";
+				}
+			else
+				{
+				move_uploaded_file(
+					$files['tmp_name'][$id],
+					'assets/images/uploads/' . $new_filename
+				);
+				add_user_media_record( $db, $user_id, $new_filename, "image" );
+				echo "http://hai.social/assets/images/uploads/$new_filename";
+				}
 			//echo "<p>File $fn uploaded.</p>";
-			echo "http://hai.social/assets/images/uploads/$new_filename";
-			add_user_image_record( $db, $user_id, $new_filename );
 			}
 		}
 	}

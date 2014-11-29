@@ -115,6 +115,8 @@ function get_db_value( $db, $query, $param_types = '', $param1 = '',
 	$stmt = $db->prepare( $query );
 	if( $stmt->error )
 		print $stmt->error;
+	print $stmt->error;
+	print $db->error;
 	if( $param3 != '' )
 		$stmt->bind_param( $param_types, $param1, $param2, $param3 );
 	elseif( $param2 != '' )
@@ -421,6 +423,27 @@ function getCarriers()
 	$a["Wyndtell"] = "wyndtell.com";
 	$a["YCC"] = "sms.ycc.ru";
 	return $a;
+	}
+
+function getGUID()
+	{
+	// This function is from http://guid.us/GUID/PHP
+    if (function_exists('com_create_guid'))
+		{
+        return com_create_guid();
+    	}
+	else
+		{
+        mt_srand((double)microtime()*10000);//optional for php 4.2.0 and up.
+        $charid = strtoupper(md5(uniqid(rand(), true)));
+        $hyphen = chr(45);// "-"
+        $uuid = substr($charid, 0, 8).$hyphen
+            .substr($charid, 8, 4).$hyphen
+            .substr($charid,12, 4).$hyphen
+            .substr($charid,16, 4).$hyphen
+            .substr($charid,20,12);
+        return $uuid;
+    	}
 	}
 
 //rebuild_db( $db, $admin, $crypt_salt );
