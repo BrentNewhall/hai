@@ -69,10 +69,13 @@ function processListItem( list_item, list_type, in_list, num_stars )
 function updatePreview( source_div_id, target_div_id )
 	{
 	var text = document.getElementById(source_div_id).value;
-	if( text.match( /@"[^"]+$/ ) )
-		suggestAtReplyNames( text.match( /@"[^"]+$/ ), source_div_id, target_div_id + "-reply-suggestions" );
-	else
-		document.getElementById(target_div_id + "-reply-suggestions").innerHTML = "";
+	if( document.getElementById(target_div_id + "-reply-suggestions") )
+		{
+		if( text.match( /@"[^"]+$/ ) )
+			suggestAtReplyNames( text.match( /@"[^"]+$/ ), source_div_id, target_div_id + "-reply-suggestions" );
+		else
+			document.getElementById(target_div_id + "-reply-suggestions").innerHTML = "";
+		}
 	if( text.match( /^THis / ) )
 		{
 		text = text.replace( /^THis /, "This " );
@@ -250,7 +253,7 @@ function setReplyTo( post_id, author, content )
 		toggleComposePane( 'compose-tools', 'compose-pane', 'compose-post' );
 	}
 
-function setComposeForEdit( post_id, compose_div_id, content, comment_id, editable, post_is_public )
+function setComposeForEdit( post_id, compose_div_id, content, world_name, comment_id, editable, post_is_public )
 	{
 	var content2 = content.replace( /==\[\[BR\]\]==/g, "\n" );
 	var content2 = content2.replace( /==\[\[QUOTE\]\]==/g, "\"" );
@@ -273,6 +276,8 @@ function setComposeForEdit( post_id, compose_div_id, content, comment_id, editab
 			document.getElementById('set-post-public').checked = true;
 		else
 			document.getElementById('set-post-public').checked = false;
+		// Set world field
+		document.getElementById('post-world').value = world_name;
 		}
 	else
 		{
@@ -434,7 +439,11 @@ function loadLatestPosts( room_id, last_post_time )
    				{    
 				// Place response in target div
 				var div = document.getElementById('post-container');
-				div.innerHTML = xmlhttp.responseText + div.innerHTML;
+				t = xmlhttp.responseText;
+				// Strip containing div
+				//t = t.replace( /<div id="post-container" class="post-container">/, "" );
+				//t = t.substr( 0, t.length - 5 );
+				div.innerHTML = t + div.innerHTML;
    				}
    			}
    		}
