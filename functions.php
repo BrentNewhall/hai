@@ -19,8 +19,11 @@ function getStandardSQLselect( $brodcast = "" )
 	                        "users.username, users.profile_public, " .
 	                        "posts.author, posts.parent, posts.editable, " .
 							"broadcasts.id " .
-	$text .= " FROM posts " .
+	$text .= "FROM posts " .
 		     "JOIN users ON (posts.author = users.id) ";
+	$text = "SELECT DISTINCT posts.id, " .
+			"GREATEST(IFNULL(posts.created,0),IFNULL(broadcasts.created,0)) AS bothcreated " .
+			"FROM posts ";
 	return $text;
 	}
 

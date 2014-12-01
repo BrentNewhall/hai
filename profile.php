@@ -31,18 +31,40 @@ function getStuff( $db, $thing, $userID )
 		}
 	}
 
+function getInterest( $db, $name, $sql, $userID )
+	{
+	$stmt = $db->stmt_init();
+	if( $stmt->prepare( $sql ) )
+		{
+		$stmt->bind_param( "s", $userID );
+		$stmt->execute();
+		$stmt->store_result();
+		$stmt->bind_result( $id, $item_name );
+		if( $stmt->num_rows > 0 )
+			{
+			print( "<div style=\"float: left; margin: 0px 10px 25px 0px;\">\n" .
+				   "<h2>" . ucfirst( $name ) . "s</h2>\n" );
+			while( $stmt->fetch() )
+				{
+				print( "<a href=\"$name.php?i=$id\">$item_name</a><br />\n" );
+				}
+			print( "</div>\n" );
+			}
+		}
+	}
+
 $page_title = "Profile";
 if( isset( $_GET["i"] )  &&  $_GET["i"] != "" )
 	{
 	$user_id = $_GET["i"];
-	$sql = "SELECT visible_name, real_name, profile_public FROM users WHERE id = ?";
+	$sql = "SELECT visible_name, real_name, profile_public, about FROM users WHERE id = ?";
 	$stmt = $db->stmt_init();
 	if( $stmt->prepare( $sql ) )
 		{
 		$stmt->bind_param( "s", $user_id );
 		$stmt->execute();
 		$stmt->store_result();
-		$stmt->bind_result( $visible_name, $real_name, $profile_public );
+		$stmt->bind_result( $visible_name, $real_name, $profile_public, $about_user );
 		$stmt->fetch();
 		if( $stmt->num_rows > 0  &&  $profile_public == 1 )
 			{
@@ -53,6 +75,11 @@ if( isset( $_GET["i"] )  &&  $_GET["i"] != "" )
 			if( $userID != "" )
 				displayNavbar( $db, $userID );
 			// Get any public information and display that
+			if( $about_user != "" )
+				print( "<div style=\"margin: 0px 10px 25px 0px;\"><h2>About</h2>\n$about_user</div>\n" );
+			print getInterest( $db, "world", "SELECT worlds.id, worlds.display_name FROM worlds JOIN user_worlds ON user_worlds.user = ? AND user_worlds.world = worlds.id WHERE user_worlds.public = 1", $userID );
+			print getInterest( $db, "room", "SELECT rooms.id, rooms.name FROM rooms JOIN room_members ON room_members.user = ? AND room_members.room = rooms.id WHERE room_members.public = 1", $userID );
+			print( "<br style=\"clear: both\">\n" );
 			getStuff( $db, "email", $user_id );
 			getStuff( $db, "phone", $user_id );
 			$sql = getStandardSQLselect() . 

@@ -82,7 +82,7 @@ if( $world != "" )
 		   "JOIN world_posts ON (world_posts.post = posts.id AND world_posts.world = ?) " .
 	       "ORDER BY posts.created DESC";
 	
-	displayPosts( $db, $db2, $sql, $userID, 25, "s", $world_id );
+	displayPostsV2( $db, $db2, $sql, $userID, 25, "s", $world_id );
 	}
 else
 	{

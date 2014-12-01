@@ -175,18 +175,18 @@ if( $userID != "" )
 	//print( "$sql<br>\n" );
 	
 	if( isset( $_GET["tab"] )  &&  $_GET["tab"] == "Everything" )
-		displayPosts( $db, $db2, $sql, $userID, 25, "none" );
+		displayPostsV2( $db, $db2, $sql, $userID, 25, "none" );
 	elseif( isset( $_GET["tab"] ) )
-		displayPosts( $db, $db2, $sql, $userID, 25, "ss", $_GET["tab"], $userID );
+		displayPostsV2( $db, $db2, $sql, $userID, 25, "ss", $_GET["tab"], $userID );
 	else
-		displayPosts( $db, $db2, $sql, $userID, 25, "ss", $userID, $userID );
+		displayPostsV2( $db, $db2, $sql, $userID, 25, "ss", $userID, $userID );
 	}
 else
 	{
 	?>
 	<p>Welcome to Hai, an experimental social platform.</p>
 	<p>Hai is divided into Worlds and Rooms. Each <strong><a href="world.php">World</a></strong> focuses on one topic, while <strong><a href="room.php">Rooms</a></strong> are named areas of conversation. Worlds are like magazines (always on topic), while Rooms are like forums (themed but not always on topic).</p>
-	<p>You can also search for <strong>Hashtags</strong> across Hai.</p>
+	<p>You can also search for <a href="hashtag.php"><strong>Hashtags</strong></a> across Hai.</p>
 	<p>Until you log in, you can only see content that has been marked public.</p>
 	<p>When you're logged in, you can assign other users to Teams based on their interests and see what they've posted.</p>
 	<?php

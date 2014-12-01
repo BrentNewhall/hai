@@ -15,7 +15,7 @@ function displayPopularHashtags( $db )
 	{
 	$sql = "SELECT DISTINCT posts.content FROM posts " .
 		   "WHERE content LIKE '%#%' AND public = 1 " .
-	       "ORDER BY created DESC LIMIT 100";
+	       "ORDER BY created DESC LIMIT 1000";
 	$stmt = $db->stmt_init();
 	$stmt->prepare( $sql );
 	#$stmt->bind_param( "s", "%#" . $_GET["tag"] . "%" );
@@ -45,7 +45,7 @@ function displayPopularHashtags( $db )
 	// Pull out just the hashtags, which should be in order
 	$hashtags = array_keys( $hashtag_counts );
 	// Print out top 10 results
-	print( "<div title=\"Among the latest 100 posts, these hashtags show up most often.\">" .
+	print( "<div title=\"Among the latest 1000 posts, these hashtags show up most often.\">" .
 	       "<p><strong>Popular</strong>: \n" );
 	for( $i = 0; $i < 10  &&  $i < count($hashtags); $i++ )
 		{
@@ -59,8 +59,7 @@ displayPopularHashtags( $db );
 if( $tag != "" )
 	print( "<h1>#" . "$tag</h1>\n" );
 
-if( $userID != "" )
-	displayNavbar( $db, $userID );
+displayNavbar( $db, $userID );
 
 // Display posts that match that hashtag
 $sql = getStandardSQLselect() .
@@ -68,7 +67,7 @@ $sql = getStandardSQLselect() .
 	   "WHERE posts.content LIKE ? AND posts.public = 1 " .
        "ORDER BY posts.created DESC LIMIT 25";
 
-displayPosts( $db, $db2, $sql, $userID, 25, "s", "%#" . $_GET["tag"] . "%" );
+displayPostsV2( $db, $db2, $sql, $userID, 25, "s", "%#" . $_GET["tag"] . "%" );
 
 require_once( "footer.php" );
 ?>

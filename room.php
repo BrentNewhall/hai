@@ -41,8 +41,9 @@ if( ( isset( $_GET["join"] )  ||  isset( $_POST["join"] ) )  &&
 	if( $invite_only == 0 )
 		{
 		$password = get_db_value( $db, "SELECT password FROM rooms WHERE id = ?", "s", $room_id );
-		if( isset( $_POST["password"] )  &&
-		    crypt( $_POST["password"], $crypt_salt ) == $password )
+		if( $password == ""  ||
+		    ( isset( $_POST["password"] )  &&
+		      crypt( $_POST["password"], $crypt_salt ) == $password ) )
 			{
 			update_db( $db, "INSERT INTO room_members (id, room, user, op) VALUES (UUID(), ?, ?, 0)", "ss", $room_id, $userID );
 			}
@@ -359,9 +360,10 @@ if( $room_name != ""  &&  $userID != "" )
 	{
 	$subscribed = get_db_value( $db, "SELECT COUNT(*) FROM room_members WHERE user = ? AND room = ?", "ss", $userID, $room_id );
 	$invite_only = get_db_value( $db, "SELECT invite_only FROM rooms WHERE id = ?", "s", $room_id );
+	$password = get_db_value( $db, "SELECT password FROM rooms WHERE id = ?", "s", $room_id );
 	if( $subscribed == 1 )
 		print( "<div style=\"float: right\"><input type=\"submit\" name=\"subscribe\" value=\"Member\" disabled /></div>\n" );
-	elseif( ! $invite_only )
+	elseif( $invite_only == 0  &&  $password == "" )
 		print( "<div style=\"float: right\"><form action=\"room.php\" method=\"get\"><input type=\"hidden\" name=\"i\" value=\"$room_id\" /><input type=\"submit\" name=\"join\" value=\"Join\" /></form></div>\n" );
 	}
 if( $room_name != "" )
@@ -432,7 +434,7 @@ if( $room_name != "" )
 		   "JOIN room_posts ON (room_posts.post = posts.id AND room_posts.room = ?) " .
 		   "LEFT JOIN broadcasts ON (broadcasts.id = posts.id) " .
 	       "ORDER BY posts.created DESC";
-	displayPosts( $db, $db2, $sql, $userID, 25, "s", $room_id );
+	displayPostsV2( $db, $db2, $sql, $userID, 25, "s", $room_id );
 	displayOpInterface( $db, $userID, $room_id );
 	// Create an empty style element just to auto-expand the compose window.
 	print( "<style onload=\"javascript:toggleComposePane('compose-tools','compose-pane','compose-post');\"></style>\n" );
@@ -440,15 +442,18 @@ if( $room_name != "" )
 	if( $is_member )
 		print( "<div style=\"text-align: right\"><form action=\"room.php\" method=\"get\"><input type=\"hidden\" name=\"i\" value=\"$room_id\" /><input type=\"submit\" name=\"leave\" value=\"Leave room\"></form></div>\n" );
 	// Start auto-update of room
-	/* $latest_post_time = get_db_value( $db, "SELECT MAX(created) FROM posts WHERE room_id = ?", "s", $room_id );
+	$latest_post_time = get_db_value( $db, "SELECT MAX(created) FROM posts JOIN room_posts ON room_posts.post = posts.id AND room_posts.room = ?", "s", $room_id );
+	// Load latest posts every 5 seconds.
 	print( "<script type='text/javascript'>\n" .
 	       "function loadLatestPostsLoop() {\n" .
 		   "  setTimeout(function() {\n" .
-		   "    loadLatestPosts('$room_id','$latest_post_time');\n" .
+		   //"    console.log( 'Loading latest posts.' );\n" .
+		   "    loadLatestPosts('$room_id',Math.round(new Date().getTime() / 1000) - 5);\n" .
 		   "    loadLatestPostsLoop();\n" .
-		   "    }, 10 );\n" .
+		   "    }, 5000 );\n" .
 		   "  }\n" .
-		   "</script>\n" ); */
+		   "loadLatestPostsLoop();\n" .
+		   "</script>\n" );
 	}
 else
 	{
