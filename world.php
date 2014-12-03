@@ -66,8 +66,9 @@ if( $world != ""  &&  $userID != "" )
 		print( "<div style=\"float: right\"><input type=\"submit\" name=\"subscribe\" value=\"Subscribed\" disabled /></div>\n" );
 	else
 		print( "<div style=\"float: right\"><form action=\"world.php\" method=\"get\"><input type=\"hidden\" name=\"i\" value=\"$world_id\" /><input type=\"submit\" name=\"subscribe\" value=\"Subscribe\" /></form></div>\n" );
-	print( "<h1>$world</h1>\n" );
 	}
+if( $world != "" )
+	print( "<h1>$world</h1>\n" );
 else
 	print( "<h1>All Worlds</h1>\n" );
 

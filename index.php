@@ -83,11 +83,15 @@ if( isset( $_POST["editing-post-id"] ) )
 elseif( isset( $_POST["editing-comment-id"] ) )
 	{
 	// Editing a post.
+	$post_content = $_POST["compose-post"];
+	// Process die rolls
+	$post_content = preg_replace_callback( "/\[ROLL\]([\S\s])+?\[\/ROLL\]/i", "processDieRoll", $post_content );
+	$post_content = preg_replace_callback( "/\[ROLL ([\S\s])+?\]/i", "processDieRoll", $post_content );
 	$comment_id = $_POST["editing-comment-id"];
 	$sql = "UPDATE comments SET content = ? WHERE id = ?";
 	$stmt = $db->stmt_init();
 	$stmt->prepare( $sql );
-	$stmt->bind_param( "ss", $_POST["compose-post"], $comment_id );
+	$stmt->bind_param( "ss", $post_content, $comment_id );
 	$stmt->execute();
 	$stmt->close();
 	// Redirect user
@@ -193,7 +197,10 @@ else
 	<p>You can also search for <a href="hashtag.php"><strong>Hashtags</strong></a> across Hai.</p>
 	<p>Until you log in, you can only see content that has been marked public.</p>
 	<p>When you're logged in, you can assign other users to Teams based on their interests and see what they've posted.</p>
+	<h2>Recent Posts</h2>
 	<?php
+	$sql = getStandardSQL( "Everything" );
+	displayPostsV2( $db, $db2, $sql, "", 25, "none" );
 	}
 
 require_once( "footer.php" );
