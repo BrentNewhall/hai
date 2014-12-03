@@ -2,6 +2,8 @@
 $page_title = "Formatting Posts";
 require_once( "header.php" );
 
+displayNavbar( $db, $userID );
+
 ?>
 <h1>Formatting Posts</h1>
 <table border="0">
@@ -143,14 +145,14 @@ require_once( "header.php" );
 		    [roll]2d8e[/roll] (max rolls "explode")<br />
 			Alternately: [roll 2d6]<br />
 		</td>
-		<td><strong>5</strong> (d6)<br />
-		    <strong>3</strong> (1d6)<br />
-		    <strong>10</strong> (2d8+4)<br />
-		    <strong>-2</strong> (2d6-2d6)<br />
-		    <strong>-1</strong> (4dF) (Fudge dice, -1 to 1)<br />
-		    <strong>94</strong> (1d%) (percentile, 1 to 100)<br />
-		    <strong>12</strong> (2d8e) (max rolls "explode")<br />
-		    Alternately: <strong>9</strong> (2d6)<br />
+		<td><?php echo formatPost( processDieRoll( array("[roll d6]") ) ); ?><br />
+			<?php echo formatPost( processDieRoll( array("[roll 1d6]") ) ); ?><br />
+			<?php echo formatPost( processDieRoll( array("[roll 2d8+4]") ) ); ?><br />
+			<?php echo formatPost( processDieRoll( array("[roll 2d6-2d6]") ) ); ?><br />
+			<?php echo formatPost( processDieRoll( array("[roll 4dF]") ) ); ?> (Fudge dice, -1 to 1)<br />
+			<?php echo formatPost( processDieRoll( array("[roll 1d%]") ) ); ?> (percentile, 1 to 100)<br />
+			<?php echo formatPost( processDieRoll( array("[roll 2d8e]") ) ); ?> (max rolls "explode")<br />
+			Alternately: <?php echo formatPost( processDieRoll( array("[roll 2d6]") ) ); ?><br />
 		</td>
 	</tr>
 </table>

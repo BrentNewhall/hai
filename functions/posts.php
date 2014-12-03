@@ -553,7 +553,7 @@ function formatPost( $text )
 	$text = preg_replace( "/\[URL=([\S]+?)\]([\S\s]+?)\[\/URL\]/i", "<a href=\"$1\">$2</a>", $text );
 	$text = preg_replace( "/\[IMG\]([\S\s]+?)\[\/IMG\]/i", "<img src=\"$1\" style=\"max-width: 500px\" />", $text );
 	// Process die rolls
-	$text = preg_replace( "/\[ROLLED\]([0-9]+) ([\S\s]+?)\[\/ROLLED\]/i", "<span class=\"die-roll\"><strong>$1</strong> ($2)</span>", $text );
+	$text = preg_replace( "/\[ROLLED\]([-]*[0-9]+) ([\S\s]+?)\[\/ROLLED\]/i", "<span class=\"die-roll\"><strong>$1</strong> ($2)</span>", $text );
 	// Process other stuff
 	$text = preg_replace( "/@\"([\S\s]+?)\"/", "<span class=\"reply-name\">@$1</span>", $text );
 	$text = preg_replace( "/<br \/>\n<br \/>\n<ul>/", "<br />\n<ul>", $text );

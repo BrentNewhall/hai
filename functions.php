@@ -222,6 +222,15 @@ function printError( $code )
 	}
 
 
+function abbreviateName( $name )
+	{
+	$short_name = $name;
+	if( strlen($short_name) > 15 )
+		{
+		$short_name = substr( $short_name, 0, 15 ) . "...";
+		}
+	return $short_name;
+	}
 
 function displayNavbar( $db, $userID )
 	{
@@ -286,11 +295,12 @@ function displayNavbar( $db, $userID )
 	$stmt->bind_result( $world_id, $world_name );
 	while( $stmt->fetch() )
 		{
+		$world_short_name = abbreviateName( $world_name );
 		print( "<p class=\"view-content\"" );
 		if( $_SERVER["PHP_SELF"] == "/world.php"  &&
 		    ( isset( $_GET["i"] )  &&  $_GET["i"] == $world_id ) )
 			print( " style=\"font-weight: bold\"" );
-		print( "><a title=\"Posts in the '$world_name' world.\" href=\"world.php?i=$world_id\">$world_name</a>" );
+		print( "><a title=\"Posts in the '$world_name' world.\" href=\"world.php?i=$world_id\">$world_short_name</a>" );
 		print( "</p>\n" );
 		}
 	// Rooms
@@ -311,11 +321,7 @@ function displayNavbar( $db, $userID )
 	$stmt->bind_result( $room_id, $room_name );
 	while( $stmt->fetch() )
 		{
-		$room_short_name = $room_name;
-		if( strlen($room_short_name) > 15 )
-			{
-			$room_short_name = substr( $room_short_name, 0, 15 ) . "...";
-			}
+		$room_short_name = abbreviateName( $room_name );
 		print( "<p class=\"view-content\"" );
 		if( $_SERVER["PHP_SELF"] == "/room.php"  &&
 		    ( ( isset( $_GET["i"] )  &&  $_GET["i"] == $room_id )  ||
