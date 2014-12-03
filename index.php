@@ -194,7 +194,7 @@ else
 	?>
 	<p>Welcome to Hai, an experimental social platform.</p>
 	<p>Hai is divided into Worlds and Rooms. Each <strong><a href="world.php">World</a></strong> focuses on one topic, while <strong><a href="room.php">Rooms</a></strong> are named areas of conversation. Worlds are like magazines (always on topic), while Rooms are like forums (themed but not always on topic).</p>
-	<p>You can also search for <a href="hashtag.php"><strong>Hashtags</strong></a> across Hai.</p>
+	<p>You can also browse <a href="hashtag.php"><strong>Hashtags</strong></a> across Hai.</p>
 	<p>Until you log in, you can only see content that has been marked public.</p>
 	<p>When you're logged in, you can assign other users to Teams based on their interests and see what they've posted.</p>
 	<h2>Recent Posts</h2>
