@@ -20,14 +20,23 @@ Features include:
   * Passwords are stored as encrypted DES hashes, using a 36-character salt.
   * Notifications ("pings") of comments on your posts, of comments on posts you've commented on, and of posts in which you've been specifically mentioned.
 
+If you'd like to help, here are some aspects with which I could particularly use help:
+
+  * Refactoring of large functions into more atomic functions.
+  * More unit tests in run\_tests.php.
+  * Better security on the AJAX calls.
+
+Setup
+-----
+
 You will need to create a database using the database structure described in hai\_prod.sql, and you will need to create a database configuration file named hai\_db.cfg (ideally stored outside of your web root) with the following statements:
 
 <pre>
-DEFINE( "DB\_SERVER",   "(database hostname or IP address)" );
-DEFINE( "DB\_NAME",     "(database name)" );
-DEFINE( "DB\_USER",     "(username)" );
-DEFINE( "DB\_PASSWORD", "(password)" );
+DEFINE( "DB_SERVER",   "(database hostname or IP address)" );
+DEFINE( "DB_NAME",     "(database name)" );
+DEFINE( "DB_USER",     "(username)" );
+DEFINE( "DB_PASSWORD", "(password)" );
 
-$crypt\_salt = "(some text)";
+$crypt_salt = "(some text)";
 </pre>
 
