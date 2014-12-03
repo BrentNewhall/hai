@@ -22,10 +22,12 @@ Features include:
 
 You will need to create a database using the database structure described in hai\_prod.sql, and you will need to create a database configuration file named hai\_db.cfg (ideally stored outside of your web root) with the following statements:
 
-> DEFINE( "DB\_SERVER",   "(database hostname or IP address)" );
-> DEFINE( "DB\_NAME",     "(database name)" );
-> DEFINE( "DB\_USER",     "(username)" );
-> DEFINE( "DB\_PASSWORD", "(password)" );
-> 
-> $crypt\_salt = "(some text)";
+<pre>
+DEFINE( "DB\_SERVER",   "(database hostname or IP address)" );
+DEFINE( "DB\_NAME",     "(database name)" );
+DEFINE( "DB\_USER",     "(username)" );
+DEFINE( "DB\_PASSWORD", "(password)" );
+
+$crypt\_salt = "(some text)";
+</pre>
 
