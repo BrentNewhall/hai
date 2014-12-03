@@ -104,10 +104,14 @@ elseif( isset( $_POST["compose-post"] ) )
 		if( $_POST["compose-post"] != ""  &&
 		    ! postingIdenticalToLastPost( $db, $_POST["compose-post"], "comments", $userID ) )
 			{
+			$post_content = $_POST["compose-post"];
+			// Process die rolls
+			$post_content = preg_replace_callback( "/\[ROLL\]([\S\s])+?\[\/ROLL\]/i", "processDieRoll", $post_content );
+			$post_content = preg_replace_callback( "/\[ROLL ([\S\s])+?\]/i", "processDieRoll", $post_content );
 			$post_type = "comment";
 			$sql = "INSERT INTO comments (id, author, created, content, post) VALUES (UUID(), ?, ?, ?, ?)";
 			$stmt->prepare( $sql );
-			$stmt->bind_param( "siss", $userID, time(), $_POST["compose-post"], $_POST["post-id"] );
+			$stmt->bind_param( "siss", $userID, time(), $post_content, $_POST["post-id"] );
 			$stmt->execute();
 			$stmt->close();
 			$new_comment_id = get_db_value( $db, "SELECT id FROM comments WHERE author = ? ORDER BY created DESC LIMIT 1", "s", $userID );

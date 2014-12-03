@@ -647,5 +647,110 @@ function handleErrors( $errno, $errstr, $errfile, $errline )
 	return true;
 	}
 
+function performDieOp( $operation, $result, $min, $max, $extra = "" )
+	{
+	$add = 0;
+	$roll = rand( $min, $max );
+	while( $extra == "explode"  &&  $roll == $max )
+		{
+		$add += $roll;
+		$roll = rand( $min, $max );
+		}
+	$result += $roll + $add;
+	return $result;
+	}
+
+function rollDie( $die, $operation, $result )
+	{
+	$extra = "";
+	if( substr( $die, -1 ) == "e" )
+		{
+		$die = substr( $die, 0, -1 );
+		$extra = "explode";
+		}
+	if( substr( $die, -2 ) == 'd%'  &&  is_numeric( substr( $die, 0, -2 ) ) )
+		{
+		$num_dice = intval( substr( $die, 0, -2 ) );
+		for( $j = 0; $j < $num_dice; $j++ )
+			{
+			$result = performDieOp( $operation, $result, 1, 100, $extra );
+			}
+		}
+	if( substr( $die, -2 ) == 'dF'  &&  is_numeric( substr( $die, 0, -2 ) ) )
+		{
+		$num_dice = intval( substr( $die, 0, -2 ) );
+		for( $j = 0; $j < $num_dice; $j++ )
+			{
+			$result = performDieOp( $operation, $result, -1, 1, $extra );
+			}
+		}
+	$die_parts = explode( "d", $die );
+	if( ( count($die_parts == 2 )  &&  ( $die_parts[0] == ""  ||  is_numeric( $die_parts[0] ) )  &&  is_numeric( $die_parts[1] ) ) )
+		{
+		if( $die_parts[0] == "" )
+			$num_dice = 1;
+		else
+			$num_dice = intval( $die_parts[0] );
+		$num_faces = intval( $die_parts[1] );
+		for( $j = 0; $j < $num_dice; $j++ )
+			{
+			$result = performDieOp( $operation, $result, 1, $num_faces, $extra );
+			}
+		}
+	return $result;
+	}
+
+function rollDice( $text )
+	{
+	$dice = array();
+	$operations = array( '+' );
+	$curr_op = 0;
+	for( $i = 0; $i < strlen($text); $i++ )
+		{
+		if( substr( $text, $i, 1 ) == "+" )
+			{
+			array_push( $dice, substr( $text, $curr_op, $i - $curr_op ) );
+			array_push( $operations, "+" );
+			$curr_op = $i + 1;
+			}
+		elseif( substr( $text, $i, 1 ) == "-" )
+			{
+			array_push( $dice, substr( $text, $curr_op, $i - $curr_op ) );
+			array_push( $operations, "-" );
+			$curr_op = $i + 1;
+			}
+		elseif( substr( $text, $i, 1 ) == "*" )
+			{
+			array_push( $dice, substr( $text, $curr_op, $i - $curr_op ) );
+			array_push( $operations, "*" );
+			$curr_op = $i + 1;
+			}
+		}
+	if( $i != $curr_op )
+		{
+		array_push( $dice, substr( $text, $curr_op, $i - $curr_op ) );
+		array_push( $operations, " " );
+		}
+	$result = 0;
+	for( $i = 0; $i < count($dice); $i++ )
+		{
+		$die = $dice[$i];
+		$operation = $operations[$i];
+		if( is_numeric( $die ) )
+			{
+			if( $operation == "+" )  $result += $die;
+			if( $operation == "-" )  $result -= $die;
+			if( $operation == "*" )  $result *= $die;
+			}
+		elseif( stripos( $die, 'd' ) !== false )
+			{
+			if( $operation == "+" )  $result += rollDie( $die, $operation, $result );
+			if( $operation == "-" )  $result -= rollDie( $die, $operation, $result );
+			if( $operation == "*" )  $result *= rollDie( $die, $operation, $result );
+			}
+		}
+	return $result;
+	}
+
 // $err_handler = set_error_handler( "handleErrors" );
 ?>

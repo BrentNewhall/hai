@@ -96,19 +96,21 @@ require_once( "header.php" );
 		<td>
 			* Bulleted list<br />
 			* with multiple items<br />
+			** and sub-items<br />
 			<br />
 			# Numbered lists<br />
+			## with sub-items<br />
 			1 Which can have any digits<br />
 			5 As items<br />
-			<br />
-			<em>Note:</em> Sub-lists are not yet implemented.</td>
 		</td>
 		<td><ul>
 		    <li> Bulleted list</li>
 			<li> with multiple items</li>
+			  <ul><li> and sub-items</li></ul>
 			</ul>
 			<ol>
 			<li> Numbered lists</li>
+			  <ol><li> with sub-items</li></ol>
 			<li> Which can have any digits</li>
 			<li> As items</li>
 			</ul></td>
@@ -130,6 +132,27 @@ require_once( "header.php" );
 <span class="code-line-number">004</span> PRINT "WELCOME, "; N
 </div>
 		</td></tr>
+	<tr>
+		<td class="label">Dice</td>
+		<td>[roll]d6[/roll]<br />
+		    [roll]1d6[/roll]<br />
+		    [roll]2d8+4[/roll]<br />
+		    [roll]2d6-2d6[/roll]<br />
+		    [roll]4dF[/roll] (Fudge dice, -1 to 1)<br />
+		    [roll]1d%[/roll] (percentile, 1 to 100)<br />
+		    [roll]2d8e[/roll] (max rolls "explode")<br />
+			Alternately: [roll 2d6]<br />
+		</td>
+		<td><strong>5</strong> (d6)<br />
+		    <strong>3</strong> (1d6)<br />
+		    <strong>10</strong> (2d8+4)<br />
+		    <strong>-2</strong> (2d6-2d6)<br />
+		    <strong>-1</strong> (4dF) (Fudge dice, -1 to 1)<br />
+		    <strong>94</strong> (1d%) (percentile, 1 to 100)<br />
+		    <strong>12</strong> (2d8e) (max rolls "explode")<br />
+		    Alternately: <strong>9</strong> (2d6)<br />
+		</td>
+	</tr>
 </table>
 
 <p>All HTML and bracketed BBcode (like [CODE]) can be upper-case or lower-case.</p>

@@ -53,7 +53,7 @@ function displayPostWithHistory( $db, $db2, $userID, $post_id, $sql )
 		printEdits( $db, $post_id );
 		print( "<div style=\"border-left: 5px solid black\">\n" );
 		}
-	displayPosts( $db, $db2, $sql, $userID, 25, "s", $post_id );
+	displayPostsV2( $db, $db2, $sql, $userID, 25, "s", $post_id );
 	if( $post_id == $this_page_post_id )
 		print( "</div>\n" );
 	}
@@ -72,7 +72,7 @@ function displayPostChildren( $db, $db2, $userID, $parent_post_id, $sql )
 		}
 	$stmt->close();
 	foreach( $child_post_ids as $post_id )
-		displayPosts( $db, $db2, $sql, $userID, 25, "s", $post_id );
+		displayPostsV2( $db, $db2, $sql, $userID, 25, "s", $post_id );
 	}
 
 if( $userID != "" )

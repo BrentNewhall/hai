@@ -241,7 +241,7 @@ function displayPostsV2( $db, $db2, $sql, $userID, $max_posts, $param_types, $pa
 		$stmt->close();
 		foreach( $post_ids as $post_id )
 			{
-			displayPost( $db, $post_id );
+			displayPost( $db, $post_id, $userID );
 			$post_index++;
 			}
 		// If there are more results even than this,
@@ -258,7 +258,7 @@ function displayPostsV2( $db, $db2, $sql, $userID, $max_posts, $param_types, $pa
 		}
 	}
 
-function displayPost( $db, $post_id )
+function displayPost( $db, $post_id, $userID )
 	{
 	$stmt = $db->stmt_init();
 	$sql = "SELECT posts.content, " .
@@ -552,6 +552,8 @@ function formatPost( $text )
 	$text = preg_replace( "/\[URL\]([\S\s]+?)\[\/URL\]/i", "<a href=\"$1\">$1</a>", $text );
 	$text = preg_replace( "/\[URL=([\S]+?)\]([\S\s]+?)\[\/URL\]/i", "<a href=\"$1\">$2</a>", $text );
 	$text = preg_replace( "/\[IMG\]([\S\s]+?)\[\/IMG\]/i", "<img src=\"$1\" style=\"max-width: 500px\" />", $text );
+	// Process die rolls
+	$text = preg_replace( "/\[ROLLED\]([0-9]+) ([\S\s]+?)\[\/ROLLED\]/i", "<span class=\"die-roll\"><strong>$1</strong> ($2)</span>", $text );
 	// Process other stuff
 	$text = preg_replace( "/@\"([\S\s]+?)\"/", "<span class=\"reply-name\">@$1</span>", $text );
 	$text = preg_replace( "/<br \/>\n<br \/>\n<ul>/", "<br />\n<ul>", $text );
@@ -630,9 +632,21 @@ function editPost( $db, $userID, $post_id, $content, $world, $editable )
 		}
 	}
 
+function processDieRoll( $matches )
+	{
+	$dice = $matches[0];
+	if( strtoupper( substr( $dice, 0, 6 ) ) == "[ROLL " )
+		$dice = substr( $dice, 6, strlen($dice) - 7 );
+	else
+		$dice = substr( $dice, 6, strlen($dice) - 13 );
+	return "[rolled]" . rollDice( $dice ) . " " . $dice . "[/rolled]";
+	}
 
 function insertPost( $db, $userID, $post_content, $parent, $public, $editable, $world_name = "" )
 	{
+	// Process die rolls
+	$post_content = preg_replace_callback( "/\[ROLL\]([\S\s])+?\[\/ROLL\]/i", "processDieRoll", $post_content );
+	$post_content = preg_replace_callback( "/\[ROLL ([\S\s])+?\]/i", "processDieRoll", $post_content );
 	update_db( $db, "INSERT INTO posts (id, author, created, content, " .
 	                          "parent, public, editable) " .
 							  "VALUES (UUID(), ?, ?, ?, ?, ?, ?)",

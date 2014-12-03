@@ -362,6 +362,10 @@ div.comment-author	{
 .progress-bar p.failure	{
 	background: #c00 none 0 0 no-repeat;
 	}
+.die-roll	{
+	color: #000077;
+	background-color: #f4f4f4;
+	}
 
 /* Edits */
 #post-history	{

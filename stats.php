@@ -31,7 +31,7 @@ print( "<p>" .  getStat( $db, "SELECT COUNT(*) FROM users", "users" ) .
 
 $seconds = time() - strtotime( "10 October 2014" ); // Seconds since site creation
 $days = intval( $seconds / 86400 ); // Convert to days
-print( "Brent started coding Hai $days days ago.</p>\n" );
+print( "<p>Brent started coding Hai $days days ago.</p>\n" );
 
 require_once( "footer.php" );
 ?>

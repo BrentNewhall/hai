@@ -185,6 +185,9 @@ function updatePreview( source_div_id, target_div_id )
 	text = text.replace( /\[URL\]([\S\s]+?)\[\/URL\]/ig, "<a href=\"$1\">$1</a>" );
 	text = text.replace( /\[URL=([\S]+?)\]([\S\s]+?)\[\/URL\]/ig, "<a href=\"$1\">$2</a>" );
 	text = text.replace( /\[IMG\]([\S\s]+?)\[\/IMG\]/ig, "<img src=\"$1\" style=\"max-width: 500px\" />" );
+	// Process die rolls
+	text = text.replace( /\[ROLL\]([\S\s]+?)\[\/ROLL\]/ig, "<span class=\"die-roll\"><strong>??</strong> ($1)</span>" );
+	text = text.replace( /\[ROLL ([\S\s]+?)\]/ig, "<span class=\"die-roll\"><strong>??</strong> ($1)</span>" );
 	// Process other stuff
 	text = text.replace( /@"([\S\s]+?)"/g, "<span class=\"reply-name\">@$1</span>" );
 	text = text.replace( /<br \/>\n<br \/>\n<ul>/g, "<br />\n<ul>" );

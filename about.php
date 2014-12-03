@@ -26,7 +26,7 @@ if( $userID != "" )
 <li class="not-yet"> You can delete your account quickly and easily. When you do, all your information is completely deleted from our servers.</li>
 <Li> Hai does not filter which posts you see.</li>
 <li class="not-yet"> Hai lets you block anyone (their content does not appear for you, and they cannot interact with you in any way).</li>
-<li class="not-yet"> Hai supports HTML, photos, and videos in your posts. Hai can host photos and videos (you can also link and embed).</li>
+<li> Hai supports HTML, photos, and videos in your posts. Hai can host photos and videos (you can also link and embed).</li>
 	<ul>
 	<li> Hai shows you a preview of what your post will look like before you post it.</li>
 	<li> Hai supports a <a href="formatting.php">useful subset of HTML, Markdown, and BBCode formatting</a>.</li>

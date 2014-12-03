@@ -87,7 +87,7 @@ if( isset( $_GET["i"] )  &&  $_GET["i"] != "" )
 			       "LEFT JOIN broadcasts ON (broadcasts.post = posts.id) " .
 				   "WHERE posts.author = ? " .
 			       "ORDER BY posts.created DESC LIMIT 25";
-			displayPosts( $db, $db2, $sql, $userID, 25, "s", $_GET["i"] );
+			displayPostsV2( $db, $db2, $sql, $userID, 25, "s", $_GET["i"] );
 			}
 		}
 	}
