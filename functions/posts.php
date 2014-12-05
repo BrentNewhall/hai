@@ -664,6 +664,23 @@ function insertPost( $db, $userID, $post_content, $parent, $public, $editable, $
 			}
 		update_db( $db, "INSERT INTO world_posts (id, world, post) VALUES (UUID(), ?, ?)", "ss", $world_id, $new_post_id );
 		}
+	// Post to Facebook
+	// Not yet implemented; this is for future use once I get
+	// authentication working.
+	if( isset( $facebook )  &&  $_POST["post-to-facebook"] != "" )
+		{
+		// User is logged in to Facebook
+		// Strip all formatting from post.
+		$fb_content = strip_tags( formatPost( $post_content ) );
+		// Construct Facebook message and post.
+		$fields = array(
+			"message" => $fb_content,
+			"name" => "Full post on Hai",
+			"link" => "http://hai.social/post.php?i=$new_post_id",
+			"description" => $fb_content
+		);
+		$result = $facebook->api( "/me/feed/", "post", $fields );
+		}
 	// Process @ replies
 	preg_match_all( "/[ ^]@\"[\S\s]+?\"/", $post_content, $matches );
 	foreach( $matches[0] as $match )

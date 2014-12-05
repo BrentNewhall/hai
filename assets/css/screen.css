@@ -366,6 +366,9 @@ div.comment-author	{
 	color: #000077;
 	background-color: #f4f4f4;
 	}
+.recover-password	{
+	font-size: 9pt;
+	}
 
 /* Edits */
 #post-history	{

@@ -358,7 +358,9 @@ JPG, GIF, or PNG only, please.
 
 <button>Import or Export Data</button> Not working yet.
 <br />
-<button>Delete Account</button> Not working yet.
+<form action="delete_account.php" method="get">
+<input type="submit" value="Delete Account" />
+</form>
 <script type="text/javascript">
 updatePreview('about-user','about-preview');
 </script>

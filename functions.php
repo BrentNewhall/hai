@@ -9,18 +9,6 @@ $posts_per_page = 25;
 
 function getStandardSQLselect( $brodcast = "" )
 	{
-	/* $text = "SELECT DISTINCT posts.id, posts.content, posts.created, " .
-	                        "users.visible_name, users.real_name, " .
-	                        "users.username, users.profile_public, " .
-	                        "posts.author, posts.parent, broadcasts.id " . */
-	$text = "SELECT DISTINCT posts.id, posts.content, " .
-							"GREATEST(IFNULL(posts.created,0),IFNULL(broadcasts.created,0)) AS bothcreated, " .
-	                        "users.visible_name, users.real_name, " .
-	                        "users.username, users.profile_public, " .
-	                        "posts.author, posts.parent, posts.editable, " .
-							"broadcasts.id " .
-	$text .= "FROM posts " .
-		     "JOIN users ON (posts.author = users.id) ";
 	$text = "SELECT DISTINCT posts.id, " .
 			"GREATEST(IFNULL(posts.created,0),IFNULL(broadcasts.created,0)) AS bothcreated " .
 			"FROM posts ";
@@ -335,6 +323,12 @@ function displayNavbar( $db, $userID )
 	if( $_SERVER["PHP_SELF"] == "/hashtag.php" )
 		print( " style=\"font-weight: bold\"" );
 	print( "href=\"hashtag.php\">Hashtags</a></p>\n" );
+	// Search
+	print( "<form action=\"search.php\" method=\"get\"><input type=\"text\" size=\"8\" name=\"q\" value=\"" );
+	if( $_SERVER["PHP_SELF"] == "/search.php"  &&  isset( $_GET["q"] ) )
+		print( htmlentities( $_GET["q"] ) );
+	print( "\" /><input type=\"submit\" value=\"search\" /></form>\n" );
+	// Account links
 	if( $userID != "" )
 		{
 		?>

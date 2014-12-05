@@ -197,6 +197,7 @@ else
 	<p>You can also browse <a href="hashtag.php"><strong>Hashtags</strong></a> across Hai.</p>
 	<p>Until you log in, you can only see content that has been marked public.</p>
 	<p>When you're logged in, you can assign other users to Teams based on their interests and see what they've posted.</p>
+	<p>Check out <a href="formatting.php">all the ways you can format your posts</a>, too.</p>
 	<h2>Recent Posts</h2>
 	<?php
 	$sql = getStandardSQL( "Everything" );

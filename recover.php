@@ -70,15 +70,16 @@ function send_recovery_message( $db, $type )
 		$stmt->bind_param( "s", $userID );
 		$stmt->execute();
 		$stmt->bind_result( $phone_number, $carrier_domain );
+		$count = 0;
 		while( $stmt->fetch() )
 			{
 			// Send SMS with link to recover.php?r=<ID>
 			$bad_characters = array( "-", "+", "(", ")" );
 			$phone_number = str_replace( $bad_characters, "", $phone_number );
 			mail( $phone_number . "@" . $carrier_domain, "Hai Account Info", "To reset your Hai password, go to http://hai.social/recover.php?r=$recovery_id" );
-			//print( $phone_number . "@" . $carrier_domain . " To reset your Hai password, go to http://hai.social/recover.php?r=$recovery_id" );
+			$count++;
 			}
-		print( "<p>Password reset SMS sent." );
+		print( "<p>$count password reset SMS message(s) sent." );
 		}
 	else
 		{ // Email
@@ -89,12 +90,20 @@ function send_recovery_message( $db, $type )
 		$stmt->bind_param( "s", $userID );
 		$stmt->execute();
 		$stmt->bind_result( $email_address );
+		$headers = "From: brent@brentnewhall.com\r\n" .
+		           "Reply-To: brent@brentnewhall.com\r\n" .
+		           "Return-Path: brent@brentnewhall.com\r\n" .
+		           "X-Mailer: PHP/" . phpversion();
+		$message = "Someone submitted a password reset for you at Hai.\r\n\r\nTo reset your Hai password, go to http://hai.social/recover.php?r=$recovery_id\r\n\r\nThis link will expire in 1 hour.\r\n";
+		$message = wordwrap( $message, 70, "\r\n" );
+		$count = 0;
 		while( $stmt->fetch() )
 			{
 			// Send email with link to recover.php?r=<ID>
-			mail( $email_address, "Hai Account Info", "Someone submitted a pssword reset for you at Hai.\r\n\r\nTo reset your Hai password, go to http://hai.social/recover.php?r=$recovery_id\r\n\r\nThis link will expire in 1 hour.\r\n" );
+			mail( $email_address, "Hai Account Info", $message, $headers, "-f brent@brentnewhall.com" );
+			$count++;
 			}
-		print( "<p>Password reset email sent." );
+		print( "<p>$count password reset email(s) sent." );
 		}
 	}
 
@@ -139,7 +148,7 @@ if( isset( $_GET["action"] )  &&  $_GET["action"] == "request-sms" )
 	{
 	?>
 	<h2>Send SMS</h2>
-	<p>Okay, enter your username in the field below. An SMS will be sent to every phone number you entered in your account.</p>
+	<p>Okay, enter your username in the field below. An SMS will be sent to the <?php echo $phones; ?> you entered in your Hai account.</p>
 	<form action="recover.php" method="post"><input type="text" name="username" size="20" /><input type="submit" name="action" value="Send SMS" /></form>
 	<p>The SMS you receive will contain a link to a password recovery page. The link will expire after 1 hour. Standard SMS data charges may apply.</p>
 	<?php
@@ -148,7 +157,7 @@ elseif( isset( $_GET["action"] )  &&  $_GET["action"] == "request-email" )
 	{
 	?>
 	<h2>Send Email</h2>
-	<p>Okay, enter your username in the field below. An email will be sent to every email account you entered in your Hai account.</p>
+	<p>Okay, enter your username in the field below. An email will be sent to the <?php echo $emails; ?> you entered in your Hai account.</p>
 	<form action="recover.php" method="post"><input type="text" name="username" size="20" /><input type="submit" name="action" value="Send Email" /></form>
 	<p>The email you receive will contain a link to a password recovery page. The link will expire after 1 hour.</p>
 	<?php
@@ -163,6 +172,7 @@ elseif( isset( $_POST["action"] )  &&  $_POST["action"] == "Send Email" )
 	}
 else
 	{
+
 ?>
 
 <p>There are 3 ways you can recover your password, from most secure to least secure:</p>

@@ -14,7 +14,7 @@ if( isset( $page_title ) )
 <![endif]-->
 <link rel="stylesheet" type="text/css" href="assets/css/screen.css" media="screen" />
 <link rel="stylesheet" type="text/css" href="assets/css/print.css" media="print" />
-<link rel="stylesheet" type="text/css" href="assets/css/mobile.css" media="only screen and (max-device-width: 480px)" />
+<link rel="stylesheet" type="text/css" href="assets/css/mobile.css" media="handheld" />
 <link href='http://fonts.googleapis.com/css?family=Oxygen:300,700&subset=latin,latin-ext' rel='stylesheet' type='text/css' />
 <script type="text/javascript" src="assets/js/main.js"></script>
 <script src="http://jwpsrv.com/library/JuLtHid6EeO2wSIACusDuQ.js"></script>

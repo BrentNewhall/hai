@@ -40,11 +40,24 @@ $new_world_name = get_db_value( $db, "SELECT worlds.display_name FROM worlds JOI
 displayResult( "editPost", "Expected content to change.", "New content.", $new_content );
 displayResult( "editPost", "Expected world to change.", "NewWorld", $new_world_name );
 
+// deleteAccount();
+update_db( $db, "INSERT INTO users (id, username, visible_name, password, real_name, created, paid, profile_public, admin) VALUES (UUID(), 'Susan', 'Susan', 'blah', 'Susan', $start_time, 0, 1, 1)" );
+$user_id = get_db_value( $db, "SELECT id FROM users WHERE real_name = 'Susan'" );
+insertPost( $db, $user_id, "First post by Susan.", ' ', 1, 1, "" );
+$post_id = get_db_value( $db, "SELECT id FROM posts WHERE author = ?", "s", $user_id );
+update_db( $db, "INSERT INTO comments (id, created, author, post, content) VALUES (UUID(), $start_time, '$user_id', '$post_id', 'First comment by Susan.')" );
+$comment_id = get_db_value( $db, "SELECT id FROM comments WHERE author = ?", "s", $user_id );
+deleteAccount( $db, $user_id );
+$new_post_id = get_db_value( $db, "SELECT id FROM posts WHERE author = ?", "s", $user_id );
+$new_comment_id = get_db_value( $db, "SELECT id FROM comments WHERE author = ?", "s", $user_id );
+displayResult( "deleteAccount", "Expected post to be deleted.", "", $new_post_id );
+displayResult( "deleteAccount", "Expected comment to be deleted.", "", $new_comment_id );
+
 
 // getLogin()
-$result = getLogin( $db, $db2 );
+/* $result = getLogin( $db, $db2 );
 $expected = "";
-displayResult( "getLogin", "Login code not as expected.", $expected, $result );
+displayResult( "getLogin", "Login code not as expected.", $expected, $result ); */
 
 ?>
 <html>

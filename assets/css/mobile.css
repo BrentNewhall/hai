@@ -1,5 +1,6 @@
 body	{
 	font-size: 14pt;
+	background-color: red;
 	}
 td	{
 	font-size: 14pt;
@@ -9,10 +10,20 @@ td	{
 	top: 5px;
 	}
 .post-container	{
-	width: auto;
+	margin: auto;
+	}
+#body-container	{
+	background-color: green;
+	margin: 0px;
+	position: absolute;
+	top: 50px;
+	left: 250px;
 	}
 .post	{
 	width: auto;
+	}
+#login-box	{
+	width: 100px;
 	}
 /* The preview of a pinged post would completely fill the viewport. */
 #display-pinged-post	{

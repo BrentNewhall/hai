@@ -112,6 +112,7 @@ function getLogin()
 </form>
 <div id="password-hint"></div>
 </form>
+<p class="recover-password"><a href="recover.php">Recover your password</a></p>
 </div>
 <?php
 		}
@@ -189,4 +190,57 @@ function createAccount( $db, $username, $password )
 
 
 
+function deleteAccount( $db, $user_id )
+	{
+	// Delete posts and every related related post table.
+	$post_ids = array();
+	$stmt = $db->stmt_init();
+	if( $stmt->prepare( "SELECT id FROM posts WHERE author = ?" ) )
+		{
+		$stmt->bind_param( "s", $user_id );
+		$stmt->execute();
+		$stmt->bind_result( $post_id );
+		while( $stmt->fetch() )
+			{
+			array_push( $post_ids, $post_id );
+			}
+		$stmt->close();
+		foreach( $post_ids as $post_id )
+			{
+			update_db( $db, "DELETE FROM post_groups WHERE post = ?", "s", $post_id );
+			update_db( $db, "DELETE FROM post_history WHERE post = ?", "s", $post_id );
+			update_db( $db, "DELETE FROM post_locks WHERE post = ?", "s", $post_id );
+			update_db( $db, "DELETE FROM posts WHERE id = ?", "s", $post_id );
+			}
+		}
+	// Delete comments.
+	update_db( $db, "DELETE FROM comments WHERE author = ?", "s", $user_id );
+	// Delete images and video.
+	$media_ids = array();
+	$stmt = $db->stmt_init();
+	if( $stmt->prepare( "SELECT id FROM user_media WHERE user = ?" ) )
+		{
+		$stmt->bind_param( "s", $user_id );
+		$stmt->execute();
+		$stmt->bind_result( $media_id );
+		while( $stmt->fetch() )
+			{
+			array_push( $media_ids, $media_id );
+			}
+		$stmt->close();
+		foreach( $media_ids as $media_id )
+			{
+			$filename = get_db_value( $db, "SELECT filename FROM user_media WHERE id = ?", "s", $media_id );
+			// Delete file
+			unlink( "assets/images/uploads/$filename" );
+			// Delete media record
+			update_db( $db, "DELETE FROM user_media WHERE id = ?", "s", $media_id );
+			}
+		}
+	// Delete profile picture
+	if( file_exists( "assets/images/avatars/$user_id" ) )
+		unlink( "assets/images/avatars/$user_id" );
+	// Delete account itself.
+	update_db( $db, "DELETE FROM users WHERE id = ?", "s", $user_id );
+	}
 ?>
