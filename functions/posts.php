@@ -66,7 +66,10 @@ function displayPosts( $db, $db2, $sql, $userID, $max_posts, $param_types, $para
 				if( $timeout < time() )
 					{
 					$compressed_content = compressContent( $content );
-					print( "<div class=\"edit-icon\"><a href=\"#\" onclick=\"javascript:setComposeForEdit('$post_id','compose-post','$compressed_content','$world_name','');document.getElementById('set-post-editable').checked=true;updatePreview('compose-post','post-preview');return false;\"><img src=\"assets/images/pencil.png\" width=\"16\" height=\"16\" alt=\"Edit\" title=\"Click here to edit this post.\" /></a></div>\n" );
+					$author_is_editor = 0;
+					if( $userID == $author_id )
+						$author_is_editor = 1;
+					print( "<div class=\"edit-icon\"><a href=\"#\" onclick=\"javascript:setComposeForEdit('$post_id','compose-post','$compressed_content','$world_name','','','',$author_is_editor);document.getElementById('set-post-editable').checked=true;updatePreview('compose-post','post-preview');return false;\"><img src=\"assets/images/pencil.png\" width=\"16\" height=\"16\" alt=\"Edit\" title=\"Click here to edit this post.\" /></a></div>\n" );
 					}
 				else
 					{
@@ -138,10 +141,10 @@ function displayPosts( $db, $db2, $sql, $userID, $max_posts, $param_types, $para
 					$compressed_comment = compressContent( $comment_content );
 					print( "<div class=\"comment-content\"><div class=\"timestamp\">" );
 					if( $commenter_id == $userID )
-						print( "<a onclick=\"javascript:setComposeForEdit('$post_id','compose-post','$compressed_content','$world_name');updatePreview('compose-post','post-preview');return false\" href=\"#\">" );
+						print( "<a onclick=\"javascript:setComposeForEdit('$post_id','compose-post','$compressed_content','$world_name','','','',1);updatePreview('compose-post','post-preview');return false\" href=\"#\">" );
 					print( getAge( $comment_created ) );
 					if( $commenter_id == $userID )
-						print( "</a><br /><div id=\"comment-edit-link-$comment_id\" style=\"float: right; display: none;\"><a onclick=\"javascript:setComposeForEdit('$post_id','compose-comment-$post_id','$compressed_comment','','$comment_id');updatePreview('compose-comment-$post_id','comment-preview-$post_id');return false;\" href=\"#\">Edit</a></div>" );
+						print( "</a><br /><div id=\"comment-edit-link-$comment_id\" style=\"float: right; display: none;\"><a onclick=\"javascript:setComposeForEdit('$post_id','compose-comment-$post_id','$compressed_comment','','$comment_id','','',1);updatePreview('compose-comment-$post_id','comment-preview-$post_id');return false;\" href=\"#\">Edit</a></div>" );
 					print( "</div>" . formatPost( $comment_content ) . "</div>" );
 					print( "</div>\n" ); // end .comment
 					}
@@ -156,7 +159,7 @@ function displayPosts( $db, $db2, $sql, $userID, $max_posts, $param_types, $para
 					{
 					$compressed_content = compressContent( $content );
 					$post_is_public = get_db_value( $db, "SELECT public FROM posts WHERE id = ?", "s", $post_id );
-					print( "<a href=\"#\" onclick=\"javascript:setComposeForEdit('$post_id','compose-post','$compressed_content','$world_name','','$editable','$post_is_public');updatePreview('compose-post','post-preview');return false;\">Edit</a> &nbsp; <a onclick=\"javascript:displayDelete('$post_id');return false;\" href=\"#\">Delete</a> &nbsp; " );
+					print( "<a href=\"#\" onclick=\"javascript:setComposeForEdit('$post_id','compose-post','$compressed_content','$world_name','','$editable','$post_is_public',1);updatePreview('compose-post','post-preview');return false;\">Edit</a> &nbsp; <a onclick=\"javascript:displayDelete('$post_id');return false;\" href=\"#\">Delete</a> &nbsp; " );
 					}
 				else
 					{
@@ -267,6 +270,7 @@ function displayPost( $db, $post_id, $userID )
 	              "users.visible_name, users.real_name, " .
 	              "users.username, users.profile_public, " .
 	              "posts.author, posts.parent, posts.editable, " .
+				  "posts.public, " .
 	              "broadcasts.id " .
 	       "FROM posts " .
 	       "JOIN users ON (posts.author = users.id) " .
@@ -279,7 +283,7 @@ function displayPost( $db, $post_id, $userID )
 		print $db->error;
 		print $stmt->error;
 		$stmt->store_result();
-		$stmt->bind_result( $content, $created, $author_visible_name, $author_real_name, $author_username, $author_public, $author_id, $parent_post_id, $editable, $broadcast_id );
+		$stmt->bind_result( $content, $created, $author_visible_name, $author_real_name, $author_username, $author_public, $author_id, $parent_post_id, $editable, $post_public, $broadcast_id );
 		$post_index = 0;
 		$stmt->fetch();
 		$stmt->close();
@@ -305,7 +309,10 @@ function displayPost( $db, $post_id, $userID )
 			if( $timeout < time() )
 				{
 				$compressed_content = compressContent( $content );
-				print( "<div class=\"edit-icon\"><a href=\"#\" onclick=\"javascript:setComposeForEdit('$post_id','compose-post','$compressed_content','$world_name','');document.getElementById('set-post-editable').checked=true;updatePreview('compose-post','post-preview');return false;\"><img src=\"assets/images/pencil.png\" width=\"16\" height=\"16\" alt=\"Edit\" title=\"Click here to edit this post.\" /></a></div>\n" );
+				$author_is_editor = 0;
+				if( $userID == $author_id )
+					$author_is_editor = 1;
+				print( "<div class=\"edit-icon\"><a href=\"#\" onclick=\"javascript:setComposeForEdit('$post_id','compose-post','$compressed_content','$world_name','','$editable','$post_public',$author_is_editor);document.getElementById('set-post-editable').checked=true;updatePreview('compose-post','post-preview');return false;\"><img src=\"assets/images/pencil.png\" width=\"16\" height=\"16\" alt=\"Edit\" title=\"Click here to edit this post.\" /></a></div>\n" );
 				}
 			else
 				{
@@ -377,10 +384,10 @@ function displayPost( $db, $post_id, $userID )
 				$compressed_comment = compressContent( $comment_content );
 				print( "<div class=\"comment-content\"><div class=\"timestamp\">" );
 				if( $commenter_id == $userID )
-					print( "<a onclick=\"javascript:setComposeForEdit('$post_id','compose-post','$compressed_content','$world_name');updatePreview('compose-post','post-preview');return false\" href=\"#\">" );
+					print( "<a onclick=\"javascript:setComposeForEdit('$post_id','compose-post','$compressed_content','$world_name','','','',1);updatePreview('compose-post','post-preview');return false\" href=\"#\">" );
 				print( getAge( $comment_created ) );
 				if( $commenter_id == $userID )
-					print( "</a><br /><div id=\"comment-edit-link-$comment_id\" style=\"float: right; display: none;\"><a onclick=\"javascript:setComposeForEdit('$post_id','compose-comment-$post_id','$compressed_comment','','$comment_id');updatePreview('compose-comment-$post_id','comment-preview-$post_id');return false;\" href=\"#\">Edit</a></div>" );
+					print( "</a><br /><div id=\"comment-edit-link-$comment_id\" style=\"float: right; display: none;\"><a onclick=\"javascript:setComposeForEdit('$post_id','compose-comment-$post_id','$compressed_comment','','$comment_id','','',1);updatePreview('compose-comment-$post_id','comment-preview-$post_id');return false;\" href=\"#\">Edit</a></div>" );
 				print( "</div>" . formatPost( $comment_content ) . "</div>" );
 				print( "</div>\n" ); // end .comment
 				}
@@ -396,12 +403,13 @@ function displayPost( $db, $post_id, $userID )
 				{
 				$compressed_content = compressContent( $content );
 				$post_is_public = get_db_value( $db, "SELECT public FROM posts WHERE id = ?", "s", $post_id );
-				print( "<a href=\"#\" onclick=\"javascript:setComposeForEdit('$post_id','compose-post','$compressed_content','$world_name','','$editable','$post_is_public');updatePreview('compose-post','post-preview');return false;\">Edit</a> &nbsp; <a onclick=\"javascript:displayDelete('$post_id');return false;\" href=\"#\">Delete</a> &nbsp; " );
+				print( "<a href=\"#\" onclick=\"javascript:setComposeForEdit('$post_id','compose-post','$compressed_content','$world_name','','$editable','$post_is_public',1);updatePreview('compose-post','post-preview');return false;\">Edit</a> &nbsp; <a onclick=\"javascript:displayDelete('$post_id');return false;\" href=\"#\">Delete</a> &nbsp; " );
 				}
 			else
 				{
 				$tracking = get_db_value( $db, "SELECT COUNT(*) FROM tracking WHERE user = ? AND post = ?", "ss", $userID, $post_id );
-				if( $tracking >= 1 )
+				$num_user_comments = get_db_value( $db, "SELECT COUNT(*) FROM comments WHERE author = ? AND post = ?", "ss", $userID, $post_id );
+				if( $tracking >= 1  ||  $num_user_comments >= 1 )
 					print( "Tracking &nbsp; " );
 				else
 					print( "<a title=\"Get pinged when comments are added to this post.\" href=\"track.php?i=$post_id&redirect=" . getRedirectURL() . "\">Track</a> &nbsp; " );

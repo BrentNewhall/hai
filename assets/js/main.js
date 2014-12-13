@@ -256,7 +256,7 @@ function setReplyTo( post_id, author, content )
 		toggleComposePane( 'compose-tools', 'compose-pane', 'compose-post' );
 	}
 
-function setComposeForEdit( post_id, compose_div_id, content, world_name, comment_id, editable, post_is_public )
+function setComposeForEdit( post_id, compose_div_id, content, world_name, comment_id, editable, post_is_public, author_is_editor )
 	{
 	var content2 = content.replace( /==\[\[BR\]\]==/g, "\n" );
 	var content2 = content2.replace( /==\[\[QUOTE\]\]==/g, "\"" );
@@ -271,6 +271,17 @@ function setComposeForEdit( post_id, compose_div_id, content, world_name, commen
 		div.style.display = "block";
 		if( document.getElementById('compose-pane').style.display == "none" )
 			toggleComposePane( 'compose-tools', 'compose-pane', 'compose-post' );
+		if( author_is_editor == '0'  ||  author_is_editor == 0  ||
+		    author_is_editor == '' )
+			{
+			document.getElementById('set-post-editable').disabled = true;
+			document.getElementById('set-post-public').disabled = true;
+			}
+		else
+			{
+			document.getElementById('set-post-editable').disabled = false;
+			document.getElementById('set-post-public').disabled = false;
+			}
 		if( editable == 1  ||  editable == '1' )
 			document.getElementById('set-post-editable').checked = true;
 		else

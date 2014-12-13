@@ -243,4 +243,193 @@ function deleteAccount( $db, $user_id )
 	// Delete account itself.
 	update_db( $db, "DELETE FROM users WHERE id = ?", "s", $user_id );
 	}
+
+
+
+
+function exportAccount( $db, $userID )
+	{
+	print "<account>\n";
+	print getAccountBasics( $db, $userID );
+	exportAccountFiles( $db, $userID );
+	print "</account>\n";
+	}
+
+
+
+function getAccountBasics( $db, $userID )
+	{
+	$results = "\t<user>\n";
+	$stmt = $db->stmt_init();
+	if( $stmt->prepare( "SELECT username, visible_name, real_name, created, paid, profile_public, about FROM users WHERE id = ?" ) )
+		{
+		$stmt->bind_param( "s", $userID );
+		$stmt->execute();
+		$stmt->bind_result( $username, $visible_name, $real_name, $created, $paid, $profile_public, $about );
+		$stmt->fetch();
+		$results .= "\t\t<id>$userID</id>\n" .
+		        "\t\t<username>$username</username>\n" .
+		        "\t\t<visible-name>$visible_name</visible-name>\n" .
+		        "\t\t<real-name>$real_name</real-name>\n" .
+		        "\t\t<created>$created</created>\n" .
+		        "\t\t<paid>$paid</paid>\n" .
+		        "\t\t<profile-public>$profile_public</profile-public>\n" .
+		        "\t\t<about>$about</about>\n";
+		$stmt->close();
+		}
+	// Emails
+	$stmt = $db->stmt_init();
+	if( $stmt->prepare( "SELECT email FROM user_emails WHERE user = ?" ) )
+		{
+		$stmt->bind_param( "s", $userID );
+		$stmt->execute();
+		$stmt->bind_result( $email );
+		while( $stmt->fetch() )
+			$results .= "\t\t<email>$email</email>\n";
+		$stmt->close();
+		}
+	// Phones
+	$stmt = $db->stmt_init();
+	if( $stmt->prepare( "SELECT phone FROM user_phones WHERE user = ?" ) )
+		{
+		$stmt->bind_param( "s", $userID );
+		$stmt->execute();
+		$stmt->bind_result( $phone );
+		while( $stmt->fetch() )
+			$results .= "\t\t<phone>$phone</phone>\n";
+		$stmt->close();
+		}
+	$results .= "\t</user>\n";
+	// Posts
+	$stmt = $db->stmt_init();
+	if( $stmt->prepare( "SELECT id, created, content, parent, public, editable FROM posts WHERE author = ?" ) )
+		{
+		$results .= "\t<posts>\n";
+		$stmt->bind_param( "s", $userID );
+		$stmt->execute();
+		$stmt->bind_result( $post_id, $created, $content, $parent, $public, $editable );
+		while( $stmt->fetch() )
+			$results .= "\t\t<post>\n" .
+			        "\t\t\t<id>$post_id</id>\n" .
+			        "\t\t\t<created>$created</created>\n" .
+			        "\t\t\t<content>$content</content>\n" .
+			        "\t\t\t<parent>$parent</parent>\n" .
+			        "\t\t\t<public>$public</public>\n" .
+			        "\t\t\t<editable>$editable</editable>\n" .
+					"\t\t</post>\n";
+		$stmt->close();
+		$results .= "\t</posts>\n";
+		}
+	// Comments
+	$stmt = $db->stmt_init();
+	if( $stmt->prepare( "SELECT id, created, post, content FROM comments WHERE author = ?" ) )
+		{
+		$results .= "\t<comments>\n";
+		$stmt->bind_param( "s", $userID );
+		$stmt->execute();
+		$stmt->bind_result( $comment_id, $created, $post, $content );
+		while( $stmt->fetch() )
+			$results .= "\t\t<comment>\n" .
+			        "\t\t\t<id>$comment_id</id>\n" .
+			        "\t\t\t<created>$created</created>\n" .
+			        "\t\t\t<post>$post</post>\n" .
+			        "\t\t\t<content>$content</content>\n" .
+					"\t\t</comment>\n";
+		$stmt->close();
+		$results .= "\t</comments>\n";
+		}
+	return $results;
+	}
+
+
+
+function exportAccountFiles( $db, $userID )
+	{
+	// Images and video
+	$stmt = $db->stmt_init();
+	if( $stmt->prepare( "SELECT id, created, filename, type FROM user_media WHERE user = ? ORDER BY type" ) )
+		{
+		print "\t<media>\n";
+		$stmt->bind_param( "s", $userID );
+		$stmt->execute();
+		$stmt->bind_result( $media_id, $created, $filename, $type );
+		if( $type == "image" )
+			$folder = "images";
+		else
+			$folder = "video";
+		while( $stmt->fetch() )
+			{
+			$file = "assets/$folder/uploads/$filename";
+			if( file_exists( $file ) )
+				{
+				$data = file_get_contents( $file );
+				if( $type == "image" )
+					print "\t\t<image>\n" .
+							"\t\t\t<id>$media_id</id>\n" .
+							"\t\t\t<created>$created</created>\n" .
+							"\t\t\t<file>$data</file>\n" .
+							"\t\t</image>\n";
+				else
+					print "\t\t<video>\n" .
+							"\t\t\t<id>$media_id</id>\n" .
+							"\t\t\t<created>$created</created>\n" .
+							"\t\t\t<file>$data</file>\n" .
+							"\t\t</video>\n";
+				}
+			}
+		$stmt->close();
+		print "\t</media>\n";
+		}
+	}
+
+
+
+
+function importAccount( $db, $userID, $file_pointer )
+	{
+	$data = "";
+	// Read file data
+	while( ! feof( $file_pointer ) )
+		{
+		$data .= fgets( $file_pointer, 4096 );
+		}
+	// Read data into XML data structure and get variables.
+	$xml = new SimpleXMLElement( $data );
+	$user_id = $xml->user[0]->id;
+	$username = $xml->user[0]->username;
+	$visible_name = $xml->user[0]->visible_name;
+	$real_name = $xml->user[0]->real_name;
+	$created = $xml->user[0]->created;
+	$paid = $xml->user[0]->paid;
+	$profile_public = $xml->user[0]->profile_public;
+	$about = $xml->user[0]->about;
+	// Insert into database.
+	update_db( $db, "INSERT INTO users (id, username, visible_name, real_name, created, paid, profile_public, about) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", "ssssiiis", $user_id, $username, $visible_name, $real_name, $created, $paid, $profile_public, $about );
+	foreach( $xml->user[0]->email as $email_address )
+		{
+		update_db( $db, "INSERT INTO user_emails (user, email, public) VALUES (?, ?, 0)", "ss", $user_id, $email_address );
+		}
+	foreach( $xml->user[0]->phone as $phone_number )
+		{
+		update_db( $db, "INSERT INTO user_phones (user, phone, public) VALUES (?, ?, 0)", "ss", $user_id, $phone_number );
+		}
+	foreach( $xml->user[0]->posts as $post )
+		{
+		$post_id = $post->id;
+		$created = $post->created;
+		$content = $post->content;
+		$parent = $post->parent;
+		$public = $post->public;
+		$editable = $post->editable;
+		update_db( $db, "INSERT INTO posts (id, created, author, content, parent, public, editable) VALUES (?, ?, ?, ?, ?, ?, ?)", "sisssii", $post_id, $created, $user_id, $content, $parent, $public, $editable);
+		}
+	foreach( $xml->user[0]->comments as $comment )
+		{
+		$comment_id = $comment->id;
+		$created = $comment->created;
+		$post_id = $comment->post;
+		$content = $comment->content;
+		update_db( $db, "INSERT INTO posts (id, created, author, post, content) VALUES (?, ?, ?, ?, ?)", "sisss", $comment_id, $created, $user_id, $post_id, $content);
+		}
+	}
 ?>

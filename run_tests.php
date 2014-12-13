@@ -53,6 +53,26 @@ $new_comment_id = get_db_value( $db, "SELECT id FROM comments WHERE author = ?",
 displayResult( "deleteAccount", "Expected post to be deleted.", "", $new_post_id );
 displayResult( "deleteAccount", "Expected comment to be deleted.", "", $new_comment_id );
 
+// importAccount() / exportAccount();
+// Create account
+update_db( $db, "INSERT INTO users (id, username, visible_name, password, real_name, created, paid, profile_public, admin) VALUES (UUID(), 'Bob', 'Bob', 'blah', 'Bob', $start_time, 0, 1, 1)" );
+$user_id = get_db_value( $db, "SELECT id FROM users WHERE real_name = 'Bob'" );
+// Export account to file
+$fp = fopen( "test_data.xml", "w" );
+$data = "<account>" . getAccountBasics( $db, $user_id ) . "</account>";
+fputs( $fp, $data );
+fclose( $fp );
+// Delete account.
+deleteAccount( $db, $user_id );
+// Verify that account no longer exists.
+$username = get_db_value( $db, "SELECT username FROM users WHERE id = ?", "s", $user_id );
+displayResult( "exportAccount", "Expected account's username to be deleted.", "", $username );
+// Import account and test that all its data is now back.
+$fp = fopen( "test_data.xml", "r" );
+importAccount( $db, $user_id, $fp );
+fclose( $fp );
+$username = get_db_value( $db, "SELECT username FROM users WHERE id = ?", "s", $user_id );
+displayResult( "exportAccount", "Expected recovered account's username to be Bob.", "Bob", $username );
 
 // getLogin()
 /* $result = getLogin( $db, $db2 );

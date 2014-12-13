@@ -356,7 +356,10 @@ JPG, GIF, or PNG only, please.
 <br />
 <br />
 
-<button>Import or Export Data</button> Not working yet.
+<form action="export_account.php" method="get">
+<input type="submit" value="Export Your Account" /> as an XML file.
+</form>
+<button>Import Your Account</button> &mdash; not working yet.
 <br />
 <form action="delete_account.php" method="get">
 <input type="submit" value="Delete Account" />
