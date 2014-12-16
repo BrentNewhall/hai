@@ -30,6 +30,31 @@ if( isset( $_POST["r"] )  &&  isset( $_POST["new-password"] ) )
 $page_title = "Recover Account";
 require_once( "header.php" );
 
+// Process a security question
+if( isset( $_POST["security-question-username"] )  && isset( $_POST["security-answer"] ) )
+	{
+	require_once( "database.php" );
+	$username = $_POST["security-question-username"];
+	$typed_answer = crypt( $_POST["security-answer"], $crypt_salt );
+	$actual_answer = get_db_value( $db, "SELECT answer " .
+	                                    "FROM security_questions JOIN users " .
+										"ON security_questions.user = users.id " .
+										"WHERE users.username = ?", "s",
+										$username );
+	if( $typed_answer == $actual_answer  &&  $typed_answer != "" )
+		{
+		// It's correct, so create account recovery record and set variables
+		//to redirect user to correct page.
+		$user_id = get_db_value( $db, "SELECT id FROM users WHERE username = ?",
+		                              "s", $username );
+		update_db( $db, "INSERT INTO account_recovery (id, created, user) " .
+		                "VALUES (UUID(), ?, ?)", "is", time(), $user_id );
+		$recovery_id = get_db_value( $db, "SELECT id FROM account_recovery " .
+		                                  "ORDER BY created DESC LIMIT 1" );
+		$_GET["r"] = $recovery_id;
+		}
+	}
+
 ?>
 <h1>Recover Password</h1>
 
@@ -60,7 +85,7 @@ function send_recovery_message( $db, $type )
 	$stmt->prepare( $sql );
 	$stmt->bind_param( "is", time(), $userID );
 	$stmt->execute();
-	$recovery_id = get_db_value( $db, "SELECT MAX(id) FROM account_recovery" );
+	$recovery_id = get_db_value( $db, "SELECT id FROM account_recovery ORDER BY created DESC LIMIT 1" );
 	if( $type == "phone" )
 		{
 		// For each phone number in account,
@@ -144,7 +169,22 @@ if( isset( $_GET["r"] ) )
 			}
 		}
 	}
-if( isset( $_GET["action"] )  &&  $_GET["action"] == "request-sms" )
+elseif( isset( $_GET["action"] )  &&  $_GET["action"] == "list-security-question" )
+	{
+	?>
+	<h2>Answer security question</h2>
+	<p>Okay, enter your username in the box below and click the button:</p>
+	<form action="recover.php" method="post">
+	<input type="text" name="security-question-username" id="security-question-username" /> <button onclick="javascript:getSecurityQuestion();return false;">Retrieve security question</button>
+	<p style="font-weight: bold" id="security-question"></p>
+	<div id="answer-div" style="display: none">
+	Your answer: <input type="text" name="security-answer" size="15" /><br />
+	<input type="submit" value="Continue" />
+	</div>
+	</form>
+	<?php
+	}
+elseif( isset( $_GET["action"] )  &&  $_GET["action"] == "request-sms" )
 	{
 	?>
 	<h2>Send SMS</h2>
@@ -177,7 +217,7 @@ else
 
 <p>There are 3 ways you can recover your password, from most secure to least secure:</p>
 <ol>
-<li> <a href="recover.php?action=list-security-questions">Answer your security questions</a>, if you filled those out.</li>
+<li> <a href="recover.php?action=list-security-question">Answer your security question</a>, if you filled one out.</li>
 <li> <a href="recover.php?action=request-sms">Send an SMS</a> to every phone on your account.</li>
 <li> <a href="recover.php?action=request-email">Send an email</a> to every email address on your account.</li>
 </ol>

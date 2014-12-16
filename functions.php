@@ -649,24 +649,34 @@ function handleErrors( $errno, $errstr, $errfile, $errline )
 
 function performDieOp( $operation, $result, $min, $max, $extra = "" )
 	{
+	global $printed_rolls;
 	$add = 0;
 	$roll = rand( $min, $max );
-	while( $extra == "explode"  &&  $roll == $max )
+	while( strpos( $extra, "explode" ) !== false  &&  $roll == $max )
 		{
 		$add += $roll;
+		if( strpos( $extra, "print" ) !== false )
+			$printed_rolls .= " $roll";
 		$roll = rand( $min, $max );
 		}
 	$result += $roll + $add;
+	if( strpos( $extra, "print" ) !== false )
+		$printed_rolls .= " $roll";
 	return $result;
 	}
 
 function rollDie( $die, $operation, $result )
 	{
 	$extra = "";
-	if( substr( $die, -1 ) == "e" )
+	$c = substr( $die, -1 );
+	while( ! in_array( $c, array( 'F', 'f', '%' ) )  &&  ! is_numeric( $c ) )
 		{
+		if( $c == "p" )
+			$extra .= "print ";
+		elseif( $c == "e" )
+			$extra .= "explode ";
 		$die = substr( $die, 0, -1 );
-		$extra = "explode";
+		$c = substr( $die, -1 );
 		}
 	if( substr( $die, -2 ) == 'd%'  &&  is_numeric( substr( $die, 0, -2 ) ) )
 		{
@@ -676,7 +686,8 @@ function rollDie( $die, $operation, $result )
 			$result = performDieOp( $operation, $result, 1, 100, $extra );
 			}
 		}
-	if( substr( $die, -2 ) == 'dF'  &&  is_numeric( substr( $die, 0, -2 ) ) )
+	if( strtolower( substr( $die, -2 ) ) == 'df'  &&
+	    is_numeric( substr( $die, 0, -2 ) ) )
 		{
 		$num_dice = intval( substr( $die, 0, -2 ) );
 		for( $j = 0; $j < $num_dice; $j++ )
@@ -685,7 +696,9 @@ function rollDie( $die, $operation, $result )
 			}
 		}
 	$die_parts = explode( "d", $die );
-	if( ( count($die_parts == 2 )  &&  ( $die_parts[0] == ""  ||  is_numeric( $die_parts[0] ) )  &&  is_numeric( $die_parts[1] ) ) )
+	if( count($die_parts == 2 )  &&
+	    ( $die_parts[0] == ""  ||  is_numeric( $die_parts[0] ) )  &&
+	    is_numeric( $die_parts[1] ) )
 		{
 		if( $die_parts[0] == "" )
 			$num_dice = 1;
@@ -702,6 +715,8 @@ function rollDie( $die, $operation, $result )
 
 function rollDice( $text )
 	{
+	global $printed_rolls;
+	$printed_rolls = "";
 	$dice = array();
 	$operations = array( '+' );
 	$curr_op = 0;
@@ -749,6 +764,8 @@ function rollDice( $text )
 			if( $operation == "*" )  $result *= rollDie( $die, $operation, $result );
 			}
 		}
+	if( $printed_rolls != "" )
+		$result .= " {" . str_replace( " ", ",", trim($printed_rolls) ) . "} ";
 	return $result;
 	}
 

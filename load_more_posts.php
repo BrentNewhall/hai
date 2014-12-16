@@ -57,7 +57,7 @@ if( isset( $_GET["r"] ) )
 		$stmt->close();
 		foreach( $post_ids as $post_id )
 			{
-			displayPost( $db, $post_id );
+			displayPost( $db, $db2, $post_id );
 			$post_index++;
 			}
 		}

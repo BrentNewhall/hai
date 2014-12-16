@@ -17,11 +17,17 @@ if( $post_id == ""  &&  strlen($post_id) != 36 )
 
 $this_page_post_id = $post_id;
 
+// So, the following is a hack. Due to the structure of the displayPosts()
+// function, I can't easily add more parameters. So, I set this "global"
+// variable so it knows to display comment history.
+$display_comment_history = "yes";
+
 function printEdits( $db, $post_id )
 	{
 	$num_edits = get_db_value( $db, "SELECT COUNT(*) FROM post_history WHERE post = ?", "s", $post_id );
 	if( $num_edits > 0 )
 		{
+		print( "<div id=\"post-history-container\">\n" );
 		print( "<div id=\"post-history\">\n" );
 		$sql = "SELECT original_content, edited, author, real_name, visible_name, profile_public FROM post_history JOIN users ON (post_history.author = users.id) WHERE post_history.post = ? ORDER BY edited DESC";
 		$stmt = $db->stmt_init();
@@ -32,11 +38,12 @@ function printEdits( $db, $post_id )
 		$stmt->bind_result( $content, $timestamp, $author, $real_name, $visible_name, $profile_public );
 		while( $stmt->fetch() )
 			{
-			print( "On " . date( "d M y" ) . ", " .
+			print( "<div class=\"history-info\"><span title=\"" . date( "d M Y @ H:i", $timestamp ) . "\">" . getAge( $timestamp ) . " ago</a>, " .
 			       getAuthorLink( $author, $visible_name, $real_name, $profile_public ) .
-			       " changed this post from:<br />\n" .
+			       " changed this post from:</div>\n" .
 			       formatPost( $content ) );
 			}
+		print( "</div>\n" );
 		print( "</div>\n" );
 		}
 	}

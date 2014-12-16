@@ -11,18 +11,18 @@ if( $userID != "" )
 <p>Hai is an experiment in social networking. It attempts to combine powerful features from various online social services.</p>
 <p>Features <span class="not-yet">in gray</span> are not yet implemented.</p>
 <ul>
-<li> Hai stores only the personal information you share with Hai. I do not share your personal information with anyone, unless you explicitly mark it "public."</li>
+<li> Hai stores only the personal information you share with Hai. Hai does not share your personal information with anyone, unless you explicitly mark it "public."</li>
   <ul>
   <li> I will share aggregate usage information (such as, "How many people posted about fish in October?").</li>
   </ul>
 <li> Hai provides multiple levels of anonymity and real names. You can use any name you want. If you use your real name, it is displayed distinctively (in bold).</li>
 <li> Hai does not require use of an email address or any other personal information.</li>
   <ul>
-  <li> You won't be able to recover your password unless you provide an email address, phone number, or answers to identifying questions. This is completely up to you.</li>
+  <li> You won't be able to recover your password unless you provide an email address, phone number (for text messaging), or answers to identifying questions. This is completely up to you.</li>
   <li> You can associate multiple email addresses and/or multiple phone numbers with your account.</li>
   </ul>
 <li> Hai lets you own multiple accounts simultaneously.</li>
-<li class="not-yet"> Hai lets you export all your data. Hai lets you import all this data into any account you own. This lets you merge accounts.</li>
+<li class="not-yet"> Hai lets you export all your data into a human-readable and computer-readable file. Hai lets you import all this data into any account you own. This lets you merge accounts.</li>
 <li> You can delete your account quickly and easily. When you do, all your information is completely deleted from our servers.</li>
 <Li> Hai does not filter which posts you see.</li>
 <li class="not-yet"> Hai lets you block anyone (their content does not appear for you, and they cannot interact with you in any way).</li>

@@ -34,13 +34,13 @@ displayNavbar( $db, $userID );
 	</tr>
 	<tr>
 		<td class="label">Size</td>
-		<td>Going [size=9]small[/size].</td>
-		<td>Going <span style="font-size: 9">small</span>.</td>
+		<td>Stuart [size=9]Little[/size].</td>
+		<td>Stuart <span style="font-size: 9pt">Little</span>.</td>
 	</tr>
 	<tr>
 		<td class="label">Font</td>
-		<td>[font=Georgia]Shiny.[/font]</td>
-		<td><span style="font-family: Georgia">Shiny.</span></td>
+		<td>[font=Verdana]Shiny.[/font]</td>
+		<td><span style="font-family: Verdana">Shiny.</span></td>
 	</tr>
 	<tr>
 		<td class="label">Align</td>
@@ -53,8 +53,8 @@ displayNavbar( $db, $userID );
 	</tr>
 	<tr>
 		<td class="label">Indent</td>
-		<td>[indent]1600 Pennsylvania Ave<br />Washington, D.C.[/indent]</td>
-		<td><div style="padding-left: 25px">1600 Pennsylvania Ave<br />Washington, D.C.</div></td>
+		<td>[indent]I must not fear.<br />Fear is the mind-killer.<br />Fear is the little-death that brings total obliteration.[/indent]</td>
+		<td><div style="padding-left: 25px">I must not fear.<br />Fear is the mind-killer.<br />Fear is the little-death that brings total obliteration.</div></td>
 	</tr>
 	<tr>
 		<td class="label">Links</td>
@@ -143,6 +143,7 @@ displayNavbar( $db, $userID );
 		    [roll]4dF[/roll] (Fudge dice, -1 to 1)<br />
 		    [roll]1d%[/roll] (percentile, 1 to 100)<br />
 		    [roll]2d8e[/roll] (max rolls "explode")<br />
+		    [roll]3d10p[/roll] (print each roll)<br />
 			Alternately: [roll 2d6]<br />
 		</td>
 		<td><?php echo formatPost( processDieRoll( array("[roll d6]") ) ); ?><br />
@@ -152,6 +153,7 @@ displayNavbar( $db, $userID );
 			<?php echo formatPost( processDieRoll( array("[roll 4dF]") ) ); ?> (Fudge dice, -1 to 1)<br />
 			<?php echo formatPost( processDieRoll( array("[roll 1d%]") ) ); ?> (percentile, 1 to 100)<br />
 			<?php echo formatPost( processDieRoll( array("[roll 2d8e]") ) ); ?> (max rolls "explode")<br />
+			<?php echo formatPost( processDieRoll( array("[roll 3d10p]") ) ); ?> (print each roll)<br />
 			Alternately: <?php echo formatPost( processDieRoll( array("[roll 2d6]") ) ); ?><br />
 		</td>
 	</tr>

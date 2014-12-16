@@ -53,47 +53,25 @@ if( isset( $_POST["editing-post-id"] ) )
 	if( isset( $_POST["editable"] )  &&  $_POST["editable"] != "" )
 		$editable = 1;
 	editPost( $db, $userID, $_POST["editing-post-id"], $_POST["compose-post"], $_POST["post-world"], $editable );
-	/* $post_id = $_POST["editing-post-id"];
-	$sql = "UPDATE posts SET content = ? WHERE id = ?";
-	$stmt = $db->stmt_init();
-	$stmt->prepare( $sql );
-	$stmt->bind_param( "ss", $_POST["compose-post"], $post_id );
-	$stmt->execute();
-	$stmt->close();
-	// If world is different,
-	$current_world_name_basic = processWorldNameForBasic( get_db_value( $db, "SELECT worlds.basic_name FROM worlds JOIN world_posts ON (world_posts.world = worlds.id AND world_posts.post = ?)", "s", $post_id ) );
-	$posted_world_name_basic  = processWorldNameForBasic( $_POST["post-world"] );
-	// Update world.
-	if( $current_world_name_basic != $posted_world_name_basic )
-		{
-		$result = update_db( $db, "DELETE FROM world_posts WHERE post = ?", "s", $post_id );
-		$new_world_id = get_db_value( $db, "SELECT id FROM worlds WHERE basic_name = ?", "s", $posted_world_name_basic );
-		if( $new_world_id == "" )
-			{
-			$posted_world_name_display = processWorldNameForDisplay( $_POST["post-world"] );
-			$new_world_id = update_db( $db, "INSERT INTO worlds (id, basic_name, display_name, class) VALUES (UUID(), ?, ?, UUID())", "ss", $posted_world_name_basic, $posted_world_name_display );
-			}
-		$result = update_db( $db, "INSERT INTO world_posts (id, world, post) VALUES (UUID(), ?, ?)", "ss", $new_world_id, $post_id );
-		$_POST["redirect"] = "world.php?i=$new_world_id";
-		} */
 	// Redirect user
 	if( isset( $_POST["redirect"] )  &&  $_POST["redirect"] != "" )
 		redirectToNewPage( $_POST["redirect"] );
 	}
 elseif( isset( $_POST["editing-comment-id"] ) )
 	{
-	// Editing a post.
-	$post_content = $_POST["compose-post"];
+	// Editing a comment.
+	$comment_content = $_POST["compose-post"];
 	// Process die rolls
-	$post_content = preg_replace_callback( "/\[ROLL\]([\S\s])+?\[\/ROLL\]/i", "processDieRoll", $post_content );
-	$post_content = preg_replace_callback( "/\[ROLL ([\S\s])+?\]/i", "processDieRoll", $post_content );
+	$comment_content = preg_replace_callback( "/\[ROLL\]([\S\s])+?\[\/ROLL\]/i", "processDieRoll", $comment_content );
+	$comment_content = preg_replace_callback( "/\[ROLL ([\S\s])+?\]/i", "processDieRoll", $comment_content );
 	$comment_id = $_POST["editing-comment-id"];
-	$sql = "UPDATE comments SET content = ? WHERE id = ?";
+	editComment( $db, $userID, $comment_id, $comment_content );
+	/* $sql = "UPDATE comments SET content = ? WHERE id = ?";
 	$stmt = $db->stmt_init();
 	$stmt->prepare( $sql );
 	$stmt->bind_param( "ss", $post_content, $comment_id );
 	$stmt->execute();
-	$stmt->close();
+	$stmt->close(); */
 	// Redirect user
 	if( isset( $_POST["redirect"] )  &&  $_POST["redirect"] != "" )
 		redirectToNewPage( $_POST["redirect"] );
@@ -175,12 +153,6 @@ if( $userID != "" )
 		print( "<h1>All</h1>\n" );
 		$sql = getStandardSQL( "all" );
 		}
-	
-	//displayPosts( $db, $db2, $sql, $userID, 25, "ss", $userID, $_GET["tab"] );
-	//displayPosts( $db, $db2, $sql, $userID, 25, "none" );
-	/* print( "$sql<br>\n" );;
-	print( "User ID $userID, tab " . $_GET["tab"] . ", $userID<br>\n" ); */
-	//print( "$sql<br>\n" );
 	
 	if( isset( $_GET["tab"] )  &&  $_GET["tab"] == "Everything" )
 		displayPostsV2( $db, $db2, $sql, $userID, 25, "none" );

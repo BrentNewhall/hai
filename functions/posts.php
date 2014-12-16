@@ -244,7 +244,7 @@ function displayPostsV2( $db, $db2, $sql, $userID, $max_posts, $param_types, $pa
 		$stmt->close();
 		foreach( $post_ids as $post_id )
 			{
-			displayPost( $db, $post_id, $userID );
+			displayPost( $db, $db2, $post_id, $userID );
 			$post_index++;
 			}
 		// If there are more results even than this,
@@ -261,7 +261,35 @@ function displayPostsV2( $db, $db2, $sql, $userID, $max_posts, $param_types, $pa
 		}
 	}
 
-function displayPost( $db, $post_id, $userID )
+function printCommentEdits( $db, $comment_id )
+	{
+	global $display_comment_history;
+	if( ! isset( $display_comment_history )  ||
+	    $display_comment_history != "yes" )
+		return;
+	$num_edits = get_db_value( $db, "SELECT COUNT(*) FROM comment_history WHERE comment = ?", "s", $comment_id );
+	if( $num_edits > 0 )
+		{
+		print( "<div id=\"comment-history\">\n" );
+		$sql = "SELECT original_content, edited, author, real_name, visible_name, profile_public FROM comment_history JOIN users ON (comment_history.author = users.id) WHERE comment_history.comment = ? ORDER BY edited DESC";
+		$stmt = $db->stmt_init();
+		$stmt->prepare( $sql );
+		print $stmt->error;
+		$stmt->bind_param( "s", $comment_id );
+		$stmt->execute();
+		$stmt->bind_result( $content, $timestamp, $author, $real_name, $visible_name, $profile_public );
+		while( $stmt->fetch() )
+			{
+			print( "<div class=\"history-info\"><span title=\"" . date( "d M Y @ H:i", $timestamp ) . "\">" . getAge( $timestamp ) . " ago</a>, " .
+			       getAuthorLink( $author, $visible_name, $real_name, $profile_public ) .
+			       " changed this comment from:</div>\n" .
+			       formatPost( $content ) );
+			}
+		print( "</div>\n" );
+		}
+	}
+
+function displayPost( $db, $db2, $post_id, $userID )
 	{
 	$stmt = $db->stmt_init();
 	$sql = "SELECT posts.content, " .
@@ -380,6 +408,7 @@ function displayPost( $db, $post_id, $userID )
 				if( $commenter_id == $userID )
 					print( "onmouseover=\"javascript:document.getElementById('comment-edit-link-$comment_id').style.display='block';\" onmouseleave=\"javascript:document.getElementById('comment-edit-link-$comment_id').style.display='none';\"" );
 				print( ">\n" );
+				printCommentEdits( $db2, $comment_id );
 				printAuthorInfo( $db, $userID, $commenter_id, $commenter_username, $commenter_visible_name, $commenter_real_name, $commenter_public, $comment_id, "comment" );
 				$compressed_comment = compressContent( $comment_content );
 				print( "<div class=\"comment-content\"><div class=\"timestamp\">" );
@@ -561,6 +590,7 @@ function formatPost( $text )
 	$text = preg_replace( "/\[URL=([\S]+?)\]([\S\s]+?)\[\/URL\]/i", "<a href=\"$1\">$2</a>", $text );
 	$text = preg_replace( "/\[IMG\]([\S\s]+?)\[\/IMG\]/i", "<img src=\"$1\" style=\"max-width: 500px\" />", $text );
 	// Process die rolls
+	$text = preg_replace( "/\[ROLLED\]([-]*[0-9]+) \{([\S\s]+?)\} ([\S\s]+?)\[\/ROLLED\]/i", "<span class=\"die-roll\"><strong>$1</strong> (rolled $2 on $3)</span>", $text );
 	$text = preg_replace( "/\[ROLLED\]([-]*[0-9]+) ([\S\s]+?)\[\/ROLLED\]/i", "<span class=\"die-roll\"><strong>$1</strong> ($2)</span>", $text );
 	// Process other stuff
 	$text = preg_replace( "/@\"([\S\s]+?)\"/", "<span class=\"reply-name\">@$1</span>", $text );
@@ -706,5 +736,21 @@ function insertPost( $db, $userID, $post_content, $parent, $public, $editable, $
 			update_db( $db, "INSERT INTO pings (id, user, created, content_type, content_id, is_read) VALUES (UUID(), ?, ?, 'm', ?, 0)", "sis", $match_user_id, time(), $new_post_id );
 			}
 		}
+	}
+
+function editComment( $db, $userID, $comment_id, $content )
+	{
+	// Add history.
+	$original_content = get_db_value( $db, 
+	                    "SELECT content FROM comments WHERE id = ?", "s",
+						$comment_id );
+	$sql = "INSERT INTO comment_history " .
+	       "(id, comment, author, edited, original_content) " .
+		   "VALUES (UUID(), ?, ?, ?, ?)";
+	update_db( $db, $sql, "ssis", $comment_id, $userID, time(),
+	           $original_content );
+	// Update comment.
+	update_db( $db, "UPDATE comments SET content = ? WHERE id = ?", "ss",
+	           $content, $comment_id );
 	}
 ?>

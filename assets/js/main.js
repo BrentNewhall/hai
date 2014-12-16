@@ -737,3 +737,31 @@ function UploadFile(file, target_div, user_id )
 		}
 	}
 
+function getSecurityQuestion()
+	{
+	if (window.XMLHttpRequest)
+   		// Create the object for browsers
+   		xmlhttp = new XMLHttpRequest();
+   	else
+   		// Create the object for browser versions prior to IE 7
+   		xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+   	xmlhttp.onreadystatechange=function()
+   		{
+   		// if server is ready with the response
+   		if (xmlhttp.readyState==4)
+   			{
+   			// if everything is Ok on browser
+   			if(xmlhttp.status==200)
+   				{    
+				// Place response in target div
+				var div = document.getElementById("security-question");
+				div.innerHTML = xmlhttp.responseText;
+				document.getElementById("answer-div").style.display = "block";
+   				}
+   			}
+   		}
+   	//send the selected data to the php page
+  	xmlhttp.open("GET",encodeURI("get_security_question.php?u=" + document.getElementById('security-question-username').value),true);
+	xmlhttp.setRequestHeader("Content-type","application/x-www-form-urlencoded");
+	xmlhttp.send(null);
+	}

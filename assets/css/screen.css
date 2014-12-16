@@ -232,7 +232,8 @@ div.comment-author	{
 	}
 .comment	{
 	color: #666666;
-	display: table-row;
+	ddisplay: table-row;
+	position: relative;
 	}
 .comment-content	{
 	border-top: 1px solid #dddddd;
@@ -371,12 +372,27 @@ div.comment-author	{
 	}
 
 /* Edits */
+#post-history-container	{
+	position: relative;
+	}
 #post-history	{
 	position: absolute;
-	top: 45px;
-	right: -280px;
-	width: 600px;
+	/* top: 45px;
+	right: -145px; */
+	left: 710px;
+	width: 500px;
 	border: 1px solid #dddddd;
 	background-color: white;
 	z-index: 200;
+	}
+#comment-history	{
+	position: absolute;
+	left: 520px;
+	width: 400px;
+	border: 1px solid #dddddd;
+	background-color: white;
+	z-index: 200;
+	}
+.history-info	{
+	color: #888888;
 	}

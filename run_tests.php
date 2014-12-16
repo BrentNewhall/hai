@@ -12,6 +12,12 @@ require_once( "functions.php" );
 $start_time = 1412898245; // A convenient time for the beginning of time. All other times are calculated off this.
 create_db( $db, $start_time );
 
+/* print "Rolling 3d6p+5: " . rollDice( "3d6p+5" ) . "<br>\n";
+print "Rolling 2d8ep+4: " . rollDice( "2d8ep+4" ) . "<br>\n";
+print "Rolling 2d8pe+4: " . rollDice( "2d8pe+4" ) . "<br>\n";
+print "Rolling 2d8ep+4: " . formatPost( "Rolled [rolled]" . rollDice( "2d8ep+4" ) . " 2d8ep+4[/rolled]" ) . "<br>\n";
+print "Rolling 4dFp+6: " . rollDice( "4dFp+6" ) . "<br>\n"; */
+
 // insertPost();
 update_db( $db, "INSERT INTO users (id, username, visible_name, password, real_name, created, paid, profile_public, admin) VALUES (UUID(), 'Admin', 'Admin', 'blah', 'Admin', $start_time, 0, 1, 1)" );
 $user_id = get_db_value( $db, "SELECT id FROM users WHERE real_name = 'Admin'" );

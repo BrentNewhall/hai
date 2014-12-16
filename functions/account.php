@@ -85,7 +85,7 @@ while( $stmt->fetch() )
 <h2>Recent Public Posts</h2>
 <?php
 		$sql = getStandardSQL( "Everything" );
-		displayPosts( $db, $db2, $sql, "", 10, "none" );
+		displayPostsV2( $db, $db2, $sql, "", 10, "none" );
 		require_once( "footer.php" );
 		exit( 0 );
 		} // end if logged_in session variable unset
@@ -168,7 +168,7 @@ function createAccount( $db, $username, $password )
 				$stmt->bind_param( "ssss", $username, $username, $password, time() );
 				$stmt->execute();
 				$stmt->close();
-				$new_user_id = get_db_value( $db, "SELECT MAX(id) FROM users" );
+				$new_user_id = get_db_value( $db, "SELECT id FROM users ORDER BY created DESC LIMIT 1" );
 				$stmt = $db->stmt_init();
 				$stmt->prepare( "INSERT INTO user_teams (id, user, name) VALUES (UUID(), ?, 'Friends')" );
 				$stmt->bind_param( "s", $new_user_id );
@@ -259,6 +259,7 @@ function exportAccount( $db, $userID )
 
 function getAccountBasics( $db, $userID )
 	{
+	$results = "\<?xml version=\"1.0\" encoding=\"utf-8\" ?\>\n";
 	$results = "\t<user>\n";
 	$stmt = $db->stmt_init();
 	if( $stmt->prepare( "SELECT username, visible_name, real_name, created, paid, profile_public, about FROM users WHERE id = ?" ) )
@@ -353,26 +354,28 @@ function exportAccountFiles( $db, $userID )
 		$stmt->bind_param( "s", $userID );
 		$stmt->execute();
 		$stmt->bind_result( $media_id, $created, $filename, $type );
-		if( $type == "image" )
-			$folder = "images";
-		else
-			$folder = "video";
 		while( $stmt->fetch() )
 			{
+			if( $type == "image" )
+				$folder = "images";
+			else
+				$folder = "video";
 			$file = "assets/$folder/uploads/$filename";
 			if( file_exists( $file ) )
 				{
-				$data = file_get_contents( $file );
+				$data = base64_encode( file_get_contents( $file ) );
 				if( $type == "image" )
 					print "\t\t<image>\n" .
 							"\t\t\t<id>$media_id</id>\n" .
 							"\t\t\t<created>$created</created>\n" .
+							"\t\t\t<filename>$filename</filename>\n" .
 							"\t\t\t<file>$data</file>\n" .
 							"\t\t</image>\n";
 				else
 					print "\t\t<video>\n" .
 							"\t\t\t<id>$media_id</id>\n" .
 							"\t\t\t<created>$created</created>\n" .
+							"\t\t\t<filename>$filename</filename>\n" .
 							"\t\t\t<file>$data</file>\n" .
 							"\t\t</video>\n";
 				}
@@ -404,16 +407,17 @@ function importAccount( $db, $userID, $file_pointer )
 	$profile_public = $xml->user[0]->profile_public;
 	$about = $xml->user[0]->about;
 	// Insert into database.
-	update_db( $db, "INSERT INTO users (id, username, visible_name, real_name, created, paid, profile_public, about) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", "ssssiiis", $user_id, $username, $visible_name, $real_name, $created, $paid, $profile_public, $about );
+	update_db( $db, "UPDATE users SET username = ?, visible_name = ?, real_name = ?, created = ?, paid = ?, profile_public = ?, about = ? WHERE id = ?", "sssiiiss", $username, $visible_name, $real_name, $created, $paid, $profile_public, $about, $userID );
 	foreach( $xml->user[0]->email as $email_address )
 		{
-		update_db( $db, "INSERT INTO user_emails (user, email, public) VALUES (?, ?, 0)", "ss", $user_id, $email_address );
+		update_db( $db, "INSERT INTO user_emails (user, email, public) VALUES (?, ?, 0)", "ss", $userID, $email_address );
 		}
 	foreach( $xml->user[0]->phone as $phone_number )
 		{
-		update_db( $db, "INSERT INTO user_phones (user, phone, public) VALUES (?, ?, 0)", "ss", $user_id, $phone_number );
+		update_db( $db, "INSERT INTO user_phones (user, phone, public) VALUES (?, ?, 0)", "ss", $userID, $phone_number );
 		}
-	foreach( $xml->user[0]->posts as $post )
+	// Insert posts
+	foreach( $xml->posts->post as $post )
 		{
 		$post_id = $post->id;
 		$created = $post->created;
@@ -421,15 +425,46 @@ function importAccount( $db, $userID, $file_pointer )
 		$parent = $post->parent;
 		$public = $post->public;
 		$editable = $post->editable;
-		update_db( $db, "INSERT INTO posts (id, created, author, content, parent, public, editable) VALUES (?, ?, ?, ?, ?, ?, ?)", "sisssii", $post_id, $created, $user_id, $content, $parent, $public, $editable);
+		update_db( $db, "INSERT INTO posts (id, created, author, content, parent, public, editable) VALUES (?, ?, ?, ?, ?, ?, ?)", "sisssii", $post_id, $created, $userID, $content, $parent, $public, $editable );
 		}
-	foreach( $xml->user[0]->comments as $comment )
+	// Insert comments
+	foreach( $xml->comments->comment as $comment )
 		{
 		$comment_id = $comment->id;
 		$created = $comment->created;
 		$post_id = $comment->post;
 		$content = $comment->content;
-		update_db( $db, "INSERT INTO posts (id, created, author, post, content) VALUES (?, ?, ?, ?, ?)", "sisss", $comment_id, $created, $user_id, $post_id, $content);
+		update_db( $db, "INSERT INTO comments (id, created, author, post, content) VALUES (?, ?, ?, ?, ?)", "sisss", $comment_id, $created, $userID, $post_id, $content );
+		}
+	// Insert images
+	foreach( $xml->media->image as $image )
+		{
+		$image_id = $image->id;
+		$created = $image->created;
+		$filename = $image->filename;
+		$file_contents = base64_decode( $image->file );
+		update_db( $db, "INSERT INTO user_media (id, created, user, filename, type) VALUES (?, ?, ?, ?, 'image')", "siss", $media_id, $created, $userID, $filename );
+		$fp = fopen( "assets/images/uploads/$filename", "w" );
+		if( $fp )
+			{
+			fputs( $fp, $file_contents );
+			fclose( $fp );
+			}
+		}
+	// Insert video
+	foreach( $xml->media->video as $video )
+		{
+		$video_id = $video->id;
+		$created = $video->created;
+		$filename = $video->filename;
+		$file_contents = base64_decode( $video->file );
+		update_db( $db, "INSERT INTO user_media (id, created, user, filename, type) VALUES (?, ?, ?, ?, 'video')", "siss", $media_id, $created, $userID, $filename );
+		$fp = fopen( "assets/video/uploads/$filename", "w" );
+		if( $fp )
+			{
+			fputs( $fp, $file_contents );
+			fclose( $fp );
+			}
 		}
 	}
 ?>
