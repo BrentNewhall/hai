@@ -1,4 +1,8 @@
 <?php
+
+ini_set( "SMTP", "mail.brentnewhall.com" );
+ini_set( "sendmail_from", "brent@brentnewhall.com" );
+
 // Process an actual reset request that contains a new password
 if( isset( $_POST["r"] )  &&  isset( $_POST["new-password"] ) )
 	{

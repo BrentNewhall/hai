@@ -10,13 +10,13 @@ if( isset( $page_title ) )
 	print( "$page_title - " );
 ?>Hai</title>
 <!--[if IE]>
-<link rel="stylesheet" type="text/css" href="assets/css/ie.css" />
+<link rel="stylesheet" type="text/css" href="/assets/css/ie.css" />
 <![endif]-->
-<link rel="stylesheet" type="text/css" href="assets/css/screen.css" media="screen" />
-<link rel="stylesheet" type="text/css" href="assets/css/print.css" media="print" />
-<link rel="stylesheet" type="text/css" href="assets/css/mobile.css" media="handheld" />
+<link rel="stylesheet" type="text/css" href="/assets/css/screen.css" media="screen" />
+<link rel="stylesheet" type="text/css" href="/assets/css/print.css" media="print" />
+<link rel="stylesheet" type="text/css" href="/assets/css/mobile.css" media="handheld" />
 <link href='http://fonts.googleapis.com/css?family=Oxygen:300,700&subset=latin,latin-ext' rel='stylesheet' type='text/css' />
-<script type="text/javascript" src="assets/js/main.js"></script>
+<script type="text/javascript" src="/assets/js/main.js"></script>
 <script src="http://jwpsrv.com/library/JuLtHid6EeO2wSIACusDuQ.js"></script>
 </head>
 <body>

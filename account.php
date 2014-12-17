@@ -393,6 +393,25 @@ JPG, GIF, or PNG only, please.
 <br />
 <br />
 
+<h2>Blocks</h2>
+<?php
+$stmt = $db->stmt_init();
+$stmt->prepare( "SELECT users.id, users.visible_name FROM users JOIN blocks ON blocks.blocker = ? AND blocks.troll = users.id" );
+$stmt->bind_param( "s", $userID );
+$stmt->execute();
+$stmt->store_result();
+$stmt->bind_result( $troll_id, $troll_name );
+if( $stmt->num_rows > 0 )
+	{
+	print( "<p>Here are the people you have blocked:</p>\n" );
+	while( $stmt->fetch() )
+		{
+		print( "$troll_name (<a href=\"block.php?u=$troll_id&unblock=yes\">unblock</a>)<br />\n" );
+		}
+	}
+else
+	print( "<p>You haven't blocked anyone. If you do, they will be listed here.</p>\n" );
+?>
 <br />
 <br />
 

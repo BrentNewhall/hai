@@ -298,7 +298,7 @@ function displayPost( $db, $db2, $post_id, $userID )
 	              "users.visible_name, users.real_name, " .
 	              "users.username, users.profile_public, " .
 	              "posts.author, posts.parent, posts.editable, " .
-				  "posts.public, " .
+				  "posts.comments, posts.public, " .
 	              "broadcasts.id " .
 	       "FROM posts " .
 	       "JOIN users ON (posts.author = users.id) " .
@@ -311,10 +311,14 @@ function displayPost( $db, $db2, $post_id, $userID )
 		print $db->error;
 		print $stmt->error;
 		$stmt->store_result();
-		$stmt->bind_result( $content, $created, $author_visible_name, $author_real_name, $author_username, $author_public, $author_id, $parent_post_id, $editable, $post_public, $broadcast_id );
+		$stmt->bind_result( $content, $created, $author_visible_name, $author_real_name, $author_username, $author_public, $author_id, $parent_post_id, $editable, $comments, $post_public, $broadcast_id );
 		$post_index = 0;
 		$stmt->fetch();
 		$stmt->close();
+		// If author is blocked, don't display post.
+		$blocked = get_db_value( $db, "SELECT id FROM blocks WHERE blocker = ? AND troll = ?", "ss", $userID, $author_id );
+		if( $blocked != "" )
+			return;
 		// Get world info
 		$world_name = "";
 		$p_stmt = $db->stmt_init();
@@ -404,21 +408,25 @@ function displayPost( $db, $db2, $post_id, $userID )
 				print( "<div class=\"comments\">\n" );
 			while( $comments_stmt->fetch() )
 				{
-				print( "<div class=\"comment\"" );
-				if( $commenter_id == $userID )
-					print( "onmouseover=\"javascript:document.getElementById('comment-edit-link-$comment_id').style.display='block';\" onmouseleave=\"javascript:document.getElementById('comment-edit-link-$comment_id').style.display='none';\"" );
-				print( ">\n" );
-				printCommentEdits( $db2, $comment_id );
-				printAuthorInfo( $db, $userID, $commenter_id, $commenter_username, $commenter_visible_name, $commenter_real_name, $commenter_public, $comment_id, "comment" );
-				$compressed_comment = compressContent( $comment_content );
-				print( "<div class=\"comment-content\"><div class=\"timestamp\">" );
-				if( $commenter_id == $userID )
-					print( "<a onclick=\"javascript:setComposeForEdit('$post_id','compose-post','$compressed_content','$world_name','','','',1);updatePreview('compose-post','post-preview');return false\" href=\"#\">" );
-				print( getAge( $comment_created ) );
-				if( $commenter_id == $userID )
-					print( "</a><br /><div id=\"comment-edit-link-$comment_id\" style=\"float: right; display: none;\"><a onclick=\"javascript:setComposeForEdit('$post_id','compose-comment-$post_id','$compressed_comment','','$comment_id','','',1);updatePreview('compose-comment-$post_id','comment-preview-$post_id');return false;\" href=\"#\">Edit</a></div>" );
-				print( "</div>" . formatPost( $comment_content ) . "</div>" );
-				print( "</div>\n" ); // end .comment
+				$blocked = get_db_value( $db, "SELECT id FROM blocks WHERE blocker = ? AND troll = ?", "ss", $userID, $commenter_id );
+				if( $blocked == "" )
+					{
+					print( "<div class=\"comment\"" );
+					if( $commenter_id == $userID )
+						print( "onmouseover=\"javascript:document.getElementById('comment-edit-link-$comment_id').style.display='block';\" onmouseleave=\"javascript:document.getElementById('comment-edit-link-$comment_id').style.display='none';\"" );
+					print( ">\n" );
+					printCommentEdits( $db2, $comment_id );
+					printAuthorInfo( $db, $userID, $commenter_id, $commenter_username, $commenter_visible_name, $commenter_real_name, $commenter_public, $comment_id, "comment" );
+					$compressed_comment = compressContent( $comment_content );
+					print( "<div class=\"comment-content\"><div class=\"timestamp\">" );
+					if( $commenter_id == $userID )
+						print( "<a onclick=\"javascript:setComposeForEdit('$post_id','compose-post','$compressed_content','$world_name','','','',1);updatePreview('compose-post','post-preview');return false\" href=\"#\">" );
+					print( getAge( $comment_created ) );
+					if( $commenter_id == $userID )
+						print( "</a><br /><div id=\"comment-edit-link-$comment_id\" style=\"float: right; display: none;\"><a onclick=\"javascript:setComposeForEdit('$post_id','compose-comment-$post_id','$compressed_comment','','$comment_id','','',1);updatePreview('compose-comment-$post_id','comment-preview-$post_id');return false;\" href=\"#\">Edit</a></div>" );
+					print( "</div>" . formatPost( $comment_content ) . "</div>" );
+					print( "</div>\n" ); // end .comment
+					} // not blocked
 				}
 			if( $comments_stmt->num_rows > 0 )
 				print( "</div>\n" ); // end .comments
@@ -444,8 +452,12 @@ function displayPost( $db, $db2, $post_id, $userID )
 					print( "<a title=\"Get pinged when comments are added to this post.\" href=\"track.php?i=$post_id&redirect=" . getRedirectURL() . "\">Track</a> &nbsp; " );
 				print( "<a title=\"Share this post with people who have you in their teams.\" href=\"broadcast.php?i=$post_id&redirect=" . getRedirectURL() . "\">Broadcast</a> &nbsp; " );
 				}
-			print( "<a onclick=\"javascript:setReplyTo('$post_id', '$author_visible_name', '$snippet');\" href=\"#top\">Reply with post</a> &nbsp; <a onclick=\"javascript:toggleComposePane('compose-tools-$post_id','compose-pane-$post_id','compose-comment-$post_id');return false;\" href=\"#\">Reply with comment</a>&nbsp;&nbsp;</div> <!-- .post-navigation -->\n" );
-			displayComposePane( "comment", $db, $userID, $post_id );
+			print( "<a onclick=\"javascript:setReplyTo('$post_id', '$author_visible_name', '$snippet');\" href=\"#top\">Reply with post</a> &nbsp; " );
+			if( $comments == 1 )
+				print( "<a onclick=\"javascript:toggleComposePane('compose-tools-$post_id','compose-pane-$post_id','compose-comment-$post_id');return false;\" href=\"#\">Reply with comment</a>" );
+			print( "&nbsp;&nbsp;</div> <!-- .post-navigation -->\n" );
+			if( $comments == 1 )
+				displayComposePane( "comment", $db, $userID, $post_id );
 			}
 		print( "</div>\n" ); // end .post-content
 		print( "</div>\n" ); // end .post
@@ -633,7 +645,7 @@ function getPostSnippet( $post_content )
 
 
 
-function editPost( $db, $userID, $post_id, $content, $world, $editable )
+function editPost( $db, $userID, $post_id, $content, $world, $editable, $comments )
 	{
 	// Editing a post.
 	// Add history.
@@ -645,10 +657,10 @@ function editPost( $db, $userID, $post_id, $content, $world, $editable )
 		   "VALUES (UUID(), ?, ?, ?, ?)";
 	$result = update_db( $db, $sql, "ssis", $post_id, $userID, time(), $original_content );
 	// Update post.
-	$sql = "UPDATE posts SET content = ?, editable = ? WHERE id = ?";
+	$sql = "UPDATE posts SET content = ?, editable = ?, comments = ? WHERE id = ?";
 	$stmt = $db->stmt_init();
 	$stmt->prepare( $sql );
-	$stmt->bind_param( "sis", $content, $editable, $post_id );
+	$stmt->bind_param( "siis", $content, $editable, $comments, $post_id );
 	$stmt->execute();
 	$stmt->close();
 	// If world is different,
@@ -680,16 +692,18 @@ function processDieRoll( $matches )
 	return "[rolled]" . rollDice( $dice ) . " " . $dice . "[/rolled]";
 	}
 
-function insertPost( $db, $userID, $post_content, $parent, $public, $editable, $world_name = "" )
+function insertPost( $db, $userID, $post_content, $parent, $public, $editable, $comments, $world_name = "" )
 	{
 	// Process die rolls
 	$post_content = preg_replace_callback( "/\[ROLL\]([\S\s])+?\[\/ROLL\]/i", "processDieRoll", $post_content );
 	$post_content = preg_replace_callback( "/\[ROLL ([\S\s])+?\]/i", "processDieRoll", $post_content );
 	update_db( $db, "INSERT INTO posts (id, author, created, content, " .
-	                          "parent, public, editable) " .
-							  "VALUES (UUID(), ?, ?, ?, ?, ?, ?)",
-	           "sissii", $userID, time(), $post_content, $parent, $public, $editable );
-	$new_post_id = get_db_value( $db, "SELECT id FROM posts WHERE author = ? ORDER BY created DESC LIMIT 1", "s", $userID );
+	                          "parent, public, editable, comments) " .
+							  "VALUES (UUID(), ?, ?, ?, ?, ?, ?, ?)",
+	           "sissiii", $userID, time(), $post_content, $parent, $public,
+	                      $editable, $comments );
+	$new_post_id = get_db_value( $db, "SELECT id FROM posts WHERE author = ? " .
+	                             "ORDER BY created DESC LIMIT 1", "s", $userID );
 	if( $world_name != "" )
 		{
 		$full_world_name = processWorldNameForDisplay( $world_name );

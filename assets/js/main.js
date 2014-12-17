@@ -24,13 +24,27 @@ function str_pad( str, len, pad, dir )
 function displayDelete( post_id )
 	{
 	var box = document.getElementById("dialog-box");
+	var y = Math.max(self.innerHeight / 2 - 100, 0);
+	box.style.top = y + "px";
 	box.style.display = "block";
 	box.innerHTML = "<p>Are you sure you want to delete this post?</p>" + 
 	                "<center><button onclick=\"location.href='delete.php?i=" + post_id + "'\">Yes</button> &nbsp; &nbsp; " + 
-	                "<button onclick=\"javascript:hideDelete();\">No</button></center>";
+	                "<button onclick=\"javascript:hideDialogBox();\">No</button></center>";
 	}
 
-function hideDelete()
+function displayBlock( user_name, user_id )
+	{
+	var box = document.getElementById("dialog-box");
+	var y = Math.max(self.innerHeight / 2 - 100, 0);
+	box.style.top = y + "px";
+	box.style.display = "block";
+	box.innerHTML = "<p>Are you sure you want to block " + user_name + "?</p>" + 
+	                "<p>You will no longer see any of this person's posts or comments.</p>\n" +
+	                "<center><button onclick=\"location.href='block.php?u=" + user_id + "'\">Yes</button> &nbsp; &nbsp; " + 
+	                "<button onclick=\"javascript:hideDialogBox();\">No</button></center>";
+	}
+
+function hideDialogBox()
 	{
 	document.getElementById("dialog-box").style.display = "none";
 	}

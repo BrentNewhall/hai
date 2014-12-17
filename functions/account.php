@@ -181,7 +181,7 @@ function createAccount( $db, $username, $password )
 					copy( "assets/images/avatar$avatar.jpg", "assets/images/avatars/$new_user_id" );
 				// Log in and go to home page.
 				$_SESSION["logged_in"] = $username;
-				header( "Location: index.php?message=Done\n\n" );
+				header( "Location: account.php\n\n" );
 				exit( 0 );
 				}
 			}

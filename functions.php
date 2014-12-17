@@ -24,6 +24,13 @@ function getStandardSQL( $type )
 		       "WHERE posts.public = 1 " .
 			   "AND posts.id NOT IN (SELECT post FROM room_posts) " .
 		       "ORDER BY bothcreated DESC LIMIT $posts_per_page";
+	elseif( $type == "Everything User" )
+		// Filter out blocks
+		return getStandardSQLselect() . 
+			   "LEFT JOIN broadcasts ON (broadcasts.post = posts.id) " .
+		       "WHERE posts.public = 1 " .
+			   "AND posts.id NOT IN (SELECT post FROM room_posts) " .
+		       "ORDER BY bothcreated DESC LIMIT $posts_per_page";
 	elseif( $type == "team" )
 		return getStandardSQLselect() .
 		       "JOIN user_teams ut ON (ut.id = ? AND ut.user = ?) " . // ? = team ID, ? = userID
@@ -38,7 +45,7 @@ function getStandardSQL( $type )
 		       "LEFT JOIN user_teams ON (user_teams.user = ?) " .
 		       "LEFT JOIN user_team_members ON (user_team_members.team = user_teams.id )" .
 			   "LEFT JOIN broadcasts ON (broadcasts.post = posts.id AND broadcasts.user = user_team_members.user) " .
-		       "WHERE posts.author = ? OR user_team_members.user = posts.author " .
+		       "WHERE ( posts.author = ? OR user_team_members.user = posts.author ) " .
 			   "AND posts.id NOT IN (SELECT post FROM room_posts) " .
 		       "ORDER BY bothcreated DESC LIMIT $posts_per_page";
 	return "";
@@ -119,8 +126,9 @@ function displayComposePane( $flavor, $db, $userID, $post_id = "" )
 						}
 					?>
 					World: <input type="text" name="post-world" id="post-world" value="<?php echo $world_value; ?>" size="30" title="A topic of conversation" onchange="javascript:displayWorldRestrictions('post-world','post-restrictions','set-post-public');displayWorldSuggestions('post-world','world-hints');" onkeyup="javascript:displayWorldRestrictions('post-world','post-restrictions','set-post-public' );displayWorldSuggestions('post-world','world-hints');" />
-					<input type="checkbox" name="public" id="set-post-public" checked="yes" value="yes" onchange="javascript:displayWorldRestrictions('post-world','post-restrictions','set-post-public' );" /> <label for="set-post-public" title="Public posts show up in both the world and your general feed. If unchecked, the post only shows up in the world.">Public</label>
-					<input type="checkbox" name="editable" id="set-post-editable" value="yes" /> <label for="set-post-editable" title="If checked, anyone logged in to Hai who can see this post can edit it.">Editable</label><br />
+					<input type="checkbox" name="public" id="set-post-public" checked="yes" value="yes" onchange="javascript:displayWorldRestrictions('post-world','post-restrictions','set-post-public' );" /> <label for="set-post-public" class="compose-checkbox" title="Public posts show up in both the world and your general feed. If unchecked, the post only shows up in the world.">Public</label>
+					<input type="checkbox" name="allow-comments" id="set-post-allow-comments" checked="yes" value="yes" /> <label for="set-post-allow-comments" class="compose-checkbox" title="If checked, anyone who can see this post can comment on it.">Comments</label>
+					<input type="checkbox" name="editable" id="set-post-editable" value="yes" /> <label for="set-post-editable" class="compose-checkbox" title="If checked, anyone logged in to Hai who can see this post can edit it.">Editable</label><br />
 					<div id="world-hints"></div>
 					<?php
 					} // end if flavor == "post"
@@ -273,14 +281,14 @@ function displayNavbar( $db, $userID )
 	print( " class=\"view-header\" title=\"View topics of conversation.\"><a href=\"world.php?world=*\">Worlds</a></p>\n" );
 	$stmt = $db->stmt_init();
 	if( $userID != "" )
-		$sql = "SELECT worlds.id, worlds.display_name FROM user_worlds, worlds WHERE user_worlds.world = worlds.id AND user_worlds.user = ? ORDER BY worlds.display_name";
+		$sql = "SELECT worlds.id, worlds.display_name, worlds.basic_name FROM user_worlds, worlds WHERE user_worlds.world = worlds.id AND user_worlds.user = ? ORDER BY worlds.display_name";
 	else
-		$sql = "SELECT worlds.id, worlds.display_name FROM worlds ORDER BY worlds.display_name LIMIT 25";
+		$sql = "SELECT worlds.id, worlds.display_name, worlds.basic_name FROM worlds ORDER BY worlds.display_name LIMIT 25";
 	$stmt->prepare( $sql );
 	if( $userID != "" )
 		$stmt->bind_param( "s", $userID );
 	$stmt->execute();
-	$stmt->bind_result( $world_id, $world_name );
+	$stmt->bind_result( $world_id, $world_name, $basic_name );
 	while( $stmt->fetch() )
 		{
 		$world_short_name = abbreviateName( $world_name );
@@ -288,7 +296,7 @@ function displayNavbar( $db, $userID )
 		if( $_SERVER["PHP_SELF"] == "/world.php"  &&
 		    ( isset( $_GET["i"] )  &&  $_GET["i"] == $world_id ) )
 			print( " style=\"font-weight: bold\"" );
-		print( "><a title=\"Posts in the '$world_name' world.\" href=\"world.php?i=$world_id\">$world_short_name</a>" );
+		print( "><a title=\"Posts in the '$world_name' world.\" href=\"/world/$basic_name\">$world_short_name</a>" );
 		print( "</p>\n" );
 		}
 	// Rooms
@@ -315,7 +323,7 @@ function displayNavbar( $db, $userID )
 		    ( ( isset( $_GET["i"] )  &&  $_GET["i"] == $room_id )  ||
 		      ( isset( $_POST["room-id"] )  &&  $_POST["room-id"] == $room_id )  ) )
 			print( " style=\"font-weight: bold\"" );
-		print( "><a title=\"Posts in the '$room_name' room.\" href=\"room.php?i=$room_id\">$room_short_name</a>" );
+		print( "><a title=\"Posts in the '$room_name' room.\" href=\"/room/$room_name\">$room_short_name</a>" );
 		print( "</p>\n" );
 		}
 	// Hashtags
@@ -358,7 +366,7 @@ function getAuthorLink( $id, $visible_name, $real_name, $profile_public )
 	{
 	$result = "";
 	if( $profile_public )
-		$result .= "<a href=\"profile.php?i=$id\" ";
+		$result .= "<a href=\"/profile.php?i=$id\" ";
 	else
 		$result .= "<span ";
 	if( $visible_name == $real_name )
@@ -425,7 +433,7 @@ function printAuthorInfo( $db, $userID, $author_id, $author_username, $author_vi
 	print(  "<div class=\"$author_class\" " );
 	if( $author_username != $_SESSION["logged_in"]  &&  $userID != "" )
 		print( "onmouseover=\"javascript:document.getElementById('author-details-$post_id').style.display='block';\" onmouseleave=\"javascript:document.getElementById('author-details-$post_id').style.display='none';document.getElementById('update-group-membership-$post_id').style.display='none';\"" );
-	print( "><img width=\"$avatar_size\" height=\"$avatar_size\" src=\"assets/images/avatars/$author_id\" /><br />" );
+	print( "><img width=\"$avatar_size\" height=\"$avatar_size\" src=\"/assets/images/avatars/$author_id\" /><br />" );
 	print getAuthorLink( $author_id, $author_visible_name, $author_real_name, $author_public );
 	print( "<br />\n" );
 	if( $author_username != $_SESSION["logged_in"]  &&  $userID != ""  &&  $userID != 0 )
@@ -434,7 +442,7 @@ function printAuthorInfo( $db, $userID, $author_id, $author_username, $author_vi
 		if( $group_names != "" )
 			print( "Member of <strong>$group_names</strong><br />" );
 		print( "<div id=\"update-group-membership-$post_id\" class=\"update-group-membership\" style=\"display: none\">$all_groups</div>\n" );
-		print( "<a href=\"#\" onmouseover=\"javascript:document.getElementById('update-group-membership-$post_id').style.display='block';return false;\" onmmouseleave=\"javascript:document.getElementById('update-group-membership-$post_id').style.display='none';return false;\">Groups</a> &nbsp; <a href=\"#\">Block</a></div> <!-- #author-details -->\n" );
+		print( "<a href=\"#\" onmouseover=\"javascript:document.getElementById('update-group-membership-$post_id').style.display='block';return false;\" onmmouseleave=\"javascript:document.getElementById('update-group-membership-$post_id').style.display='none';return false;\">Teams</a> &nbsp; <a href=\"#\" onclick=\"javascript:displayBlock('$author_visible_name','$author_id');return false;\">Block</a></div> <!-- #author-details -->\n" );
 		}
 	print(  "</div> <!-- .$author_class -->\n" );
 	}

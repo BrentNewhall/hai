@@ -52,7 +52,10 @@ if( isset( $_POST["editing-post-id"] ) )
 	$editable = "0";
 	if( isset( $_POST["editable"] )  &&  $_POST["editable"] != "" )
 		$editable = 1;
-	editPost( $db, $userID, $_POST["editing-post-id"], $_POST["compose-post"], $_POST["post-world"], $editable );
+	$comments = "0";
+	if( isset( $_POST["comments"] )  &&  $_POST["comments"] != "" )
+		$comments = 1;
+	editPost( $db, $userID, $_POST["editing-post-id"], $_POST["compose-post"], $_POST["post-world"], $editable, $comments );
 	// Redirect user
 	if( isset( $_POST["redirect"] )  &&  $_POST["redirect"] != "" )
 		redirectToNewPage( $_POST["redirect"] );
@@ -115,10 +118,13 @@ elseif( isset( $_POST["compose-post"] ) )
 			$editable = "0";
 			if( isset( $_POST["editable"] )  &&  $_POST["editable"] != "" )
 				$editable = 1;
+			$comments = "0";
+			if( isset( $_POST["comments"] )  &&  $_POST["comments"] != "" )
+				$comments = 1;
 			$world_name = "";
 			if( isset( $_POST["post-world"] )  &&  $_POST["post-world"] != "" )
 				$world_name = $_POST["post-world"];
-			insertPost( $db, $userID, $_POST["compose-post"], $parent, $public, $editable, $world_name );
+			insertPost( $db, $userID, $_POST["compose-post"], $parent, $public, $editable, $comments, $world_name );
 			}
 		}
 	// Redirect user
@@ -140,7 +146,7 @@ if( $userID != "" )
 	if( isset( $_GET["tab"] )  &&  $_GET["tab"] == "Everything" )
 		{
 		print( "<h1>Everything</h1>\n" );
-		$sql = getStandardSQL( "Everything" );
+		$sql = getStandardSQL( "Everything User" );
 		}
 	elseif( isset( $_GET["tab"] ) )
 		{
@@ -155,11 +161,11 @@ if( $userID != "" )
 		}
 	
 	if( isset( $_GET["tab"] )  &&  $_GET["tab"] == "Everything" )
-		displayPostsV2( $db, $db2, $sql, $userID, 25, "none" );
+		displayPostsV2( $db, $db2, $sql, $userID, 50, "none" );
 	elseif( isset( $_GET["tab"] ) )
-		displayPostsV2( $db, $db2, $sql, $userID, 25, "ss", $_GET["tab"], $userID );
+		displayPostsV2( $db, $db2, $sql, $userID, 50, "ss", $_GET["tab"], $userID );
 	else
-		displayPostsV2( $db, $db2, $sql, $userID, 25, "ss", $userID, $userID );
+		displayPostsV2( $db, $db2, $sql, $userID, 50, "ss", $userID, $userID );
 	}
 else
 	{

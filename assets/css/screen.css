@@ -49,6 +49,9 @@ h2	{
 #composer-table	{
 	margin-bottom: 75px;
 	}
+.compose-checkbox	{
+	font-size: 85%;
+	}
 #navbar	{
 	position: absolute;
 	top: 35px;
@@ -297,12 +300,21 @@ div.comment-author	{
 	}
 #dialog-box	{
 	background-color: white;
-	position: fixed;
+	/* position: fixed;
 	left: 500px;
-	top: 200px;
+	top: 200px; */
+	position: fixed;
+	top: 40%;
+	left: 50%;
+	width: 300px;
+	margin-left: -150px;
 	z-index: 9999;
-	padding: 10px;
+	padding: 7px;
 	border: 2px solid black;
+	}
+#dialog-box p	{
+	margin-top: 0px;
+	margin-bottom: 8px;
 	}
 #load-more-posts	{
 	}
