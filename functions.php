@@ -297,6 +297,7 @@ function displayNavbar( $db, $userID )
 		    ( isset( $_GET["i"] )  &&  $_GET["i"] == $world_id ) )
 			print( " style=\"font-weight: bold\"" );
 		print( "><a title=\"Posts in the '$world_name' world.\" href=\"/world/$basic_name\">$world_short_name</a>" );
+		//print( "><a title=\"Posts in the '$world_name' world.\" href=\"/room.php?i=$world_id\">$world_short_name</a>" );
 		print( "</p>\n" );
 		}
 	// Rooms
@@ -324,6 +325,7 @@ function displayNavbar( $db, $userID )
 		      ( isset( $_POST["room-id"] )  &&  $_POST["room-id"] == $room_id )  ) )
 			print( " style=\"font-weight: bold\"" );
 		print( "><a title=\"Posts in the '$room_name' room.\" href=\"/room/$room_name\">$room_short_name</a>" );
+		//print( "><a title=\"Posts in the '$room_name' room.\" href=\"/room.php?i=$room_id\">$room_short_name</a>" );
 		print( "</p>\n" );
 		}
 	// Hashtags

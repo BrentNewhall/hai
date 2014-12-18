@@ -16,14 +16,15 @@ if( $elements[0] == "world"  ||
 	                               "WHERE basic_name = ?", "s", $world_name );
 	if( $world_id != "" )
 		{
-		$_GET["i"] = $world_id;
-		require_once "world.php";
+		//$_GET["i"] = $world_id;
+		//require_once "world.php";
+		header( "Location: /world.php?i=$world_id\n\n" );
 		exit( 0 );
 		}
 	}
 // Process room
 elseif( $elements[0] == "room"  ||
-    $elements[0] == "rooms" )
+        $elements[0] == "rooms" )
 	{
 	require_once "functions.php";
 	$room_name = urldecode( strtolower( $elements[1] ) );
@@ -31,8 +32,9 @@ elseif( $elements[0] == "room"  ||
 	                              "WHERE LOWER(name) = ?", "s", $room_name );
 	if( $room_id != "" )
 		{
-		$_GET["i"] = $room_id;
-		require_once "room.php";
+		//$_GET["i"] = $room_id;
+		//require_once "room.php";
+		header( "Location: /room.php?i=$room_id\n\n" );
 		exit( 0 );
 		}
 	}
@@ -45,8 +47,9 @@ elseif( $elements[0] == "user" )
 	                              "WHERE username = ?", "s", $username );
 	if( $user_id != "" )
 		{
-		$_GET["i"] = $user_id;
-		require_once "profile.php";
+		//$_GET["i"] = $user_id;
+		//require_once "profile.php";
+		header( "Location: /profile.php?i=$user_id\n\n" );
 		exit( 0 );
 		}
 	}

@@ -22,8 +22,9 @@ $last_post_time = "";
 if( isset( $_GET["t"] ) )
 	$last_post_time = $_GET["t"];
 
-//print( "$start_index user $user_id<br>\n" );;
-//print( "Hello ($last_post_time)... " );
+#print( "$start_index user $user_id<br>\n" );;
+#print( "Hello ($last_post_time)... " );
+#exit(0);
 
 if( isset( $_GET["r"] ) )
 	{
