@@ -1,17 +1,21 @@
 <?php
-function displayPosts( $db, $db2, $sql, $userID, $max_posts, $param_types, $param1 = "", $param2 = "", $param3 = "" )
+//function displayPosts( $db, $db2, $sql, $userID, $max_posts, $param_types, $param1 = "", $param2 = "", $param3 = "" )
+function displayPosts( $db, $db2, $sql, $userID, $max_posts, $params = NULL )
 	{
 	$total_count_sql = substr( $sql, strpos( $sql, " FROM " ) );
 	$total_count_sql = substr( $total_count_sql, 0, strpos( $total_count_sql, " ORDER BY " ) );
 	$total_count_sql = "SELECT COUNT(*)" . $total_count_sql;
 	//print( "SQL: $sql<br>\n$total_count_sql<br>" );
 	//print "$param_types $param1 $param2<br>" ;
+	/* 
 	if( $param3 != "" )
-		$total_count = get_db_value( $db, $total_count_sql, $param_types, $param1, $param2, $param3 );
+		$total_count = get_db_value( $db, $total_count_sql, array( $param_types, &$param1, &$param2, &$param3 ) );
 	elseif( $param2 != "" )
-		$total_count = get_db_value( $db, $total_count_sql, $param_types, $param1, $param2 );
+		$total_count = get_db_value( $db, $total_count_sql, array( $param_types, &$param1, &$param2 ) );
 	elseif( $param1 != "" )
-		$total_count = get_db_value( $db, $total_count_sql, $param_types, $param1 );
+		$total_count = get_db_value( $db, $total_count_sql, array( $param_types, &$param1 ) ); */
+	if( ! is_null( $params ) )
+		$total_count = get_db_value( $db, $total_count_sql, $params );
 	else
 		$total_count = get_db_value( $db, $total_count_sql );
 	//print( "Total: $total_count<br>\n" );
@@ -30,206 +34,18 @@ function displayPosts( $db, $db2, $sql, $userID, $max_posts, $param_types, $para
 	if( $stmt->prepare( $sql )  &&  $total_count > 0 )
 		{
 		print( "<div id=\"post-container\" class=\"post-container\">\n" );
-		if( $param3 != "" )
+		/* if( $param3 != "" )
 			$stmt->bind_param( $param_types, $param1, $param2, $param3 );
 		elseif( $param2 != "" )
 			$stmt->bind_param( $param_types, $param1, $param2 );
 		elseif( $param1 != "" )
-			$stmt->bind_param( $param_types, $param1 );
-		$stmt->execute();
-		print $db->error;
-		print $stmt->error;
-		$stmt->store_result();
-		$stmt->bind_result( $post_id, $content, $created, $author_visible_name, $author_real_name, $author_username, $author_public, $author_id, $parent_post_id, $editable, $broadcast_id );
-		$post_index = 0;
-		while( $stmt->fetch()  &&  $post_index < $max_posts )
+			$stmt->bind_param( $param_types, $param1 ); */
+		if( ! is_null( $params ) )
 			{
-			// Get world info
-			$world_name = "";
-			$p_stmt = $db2->stmt_init();
-			$p_stmt = $db2->prepare( "SELECT worlds.id, worlds.display_name FROM worlds, world_posts WHERE world_posts.world = worlds.id AND world_posts.post = ?" );
-			$p_stmt->bind_param( "s", $post_id );
-			$p_stmt->execute();
-			$p_stmt->bind_result( $world_id, $world_name );
-			$p_stmt->fetch();
-			$p_stmt->close();
-			print( "<div class=\"post\">\n" );
-			printAuthorInfo( $db2, $userID, $author_id, $author_username, $author_visible_name, $author_real_name, $author_public, $post_id, "full" );
-			print( "<div class=\"post-content\"" );
-			if( $userID != ""  &&  $userID != 0 )
-				print( " onmouseover=\"javascript:document.getElementById('post-navigation-$post_id').style.visibility='visible';\" onmouseleave=\"javascript:document.getElementById('post-navigation-$post_id').style.visibility='hidden';\"" );
-			print( ">" );
-			print( "<div class=\"timestamp\"><a href=\"post.php?i=$post_id#main-post\">" . getAge( $created ) . "</a></div>\n" );
-			if( $editable == 1 )
-				{
-				$timeout = intval( get_db_value( $db2, "SELECT timeout FROM post_locks WHERE post = ?", "s", $post_id ) );
-				if( $timeout < time() )
-					{
-					$compressed_content = compressContent( $content );
-					$author_is_editor = 0;
-					if( $userID == $author_id )
-						$author_is_editor = 1;
-					print( "<div class=\"edit-icon\"><a href=\"#\" onclick=\"javascript:setComposeForEdit('$post_id','compose-post','$compressed_content','$world_name','','','',$author_is_editor);document.getElementById('set-post-editable').checked=true;updatePreview('compose-post','post-preview');return false;\"><img src=\"assets/images/pencil.png\" width=\"16\" height=\"16\" alt=\"Edit\" title=\"Click here to edit this post.\" /></a></div>\n" );
-					}
-				else
-					{
-					$name_of_locked_user = intval( get_db_value( $db2, "SELECT visible_name FROM users JOIN post_locks ON (post_locks.user = users.id AND post_locks.post = ?)", "s", $post_id ) );
-					$minutes_until_unlocked = intval( ($timeout - time()) / 60 );
-					$msg = "$minutes_until_unlocked minutes";
-					if( $minutes_until_unlocked == 0 )
-						$msg = "less than a minute";
-					elseif( $minutes_until_unlocked == 1 )
-						$msg = "1 minute";
-					print( "<div class=\"edit-icon\"><img src=\"assets/images/pencil-disabled.png\" width=\"16\" height=\"16\" alt=\"Edit\" title=\"$name_of_locked_user is editing this post. It will become unlocked in $msg.\" /></div>\n" );
-					}
-				}
-			if( $world_name != "" )
-				print( "<div class=\"in-world\">In the world of <a href=\"world.php?i=$world_id\" class=\"world-name\">$world_name</a>:</div>\n" );
-			if( $broadcast_id != "" )
-				{
-				$u_stmt = $db2->prepare( "SELECT broadcasts.created, users.id, users.real_name, users.visible_name, users.profile_public FROM broadcasts JOIN users ON (broadcasts.user = users.id) WHERE broadcasts.id = ?" );
-				$u_stmt->bind_param( "s", $broadcast_id );
-				$u_stmt->execute();
-				$u_stmt->bind_result( $b_time, $b_user_id, $b_real_name, $b_visible_name, $b_public );
-				$u_stmt->fetch();
-				$u_stmt->close();
-				print( "<div class=\"broadcast\">Broadcast " . getAge( $b_time) . " ago by " . getAuthorLink( $b_user_id, $b_visible_name, $b_real_name, $b_public ) . "</div>\n" );
-				}
-			// Get reply-to info
-			if( $parent_post_id != ""  &&  $userID != ""  &&  $userID != 0 )
-				{
-				$p_stmt = $db2->stmt_init();
-				$p_stmt->prepare( "SELECT posts.content, users.visible_name, users.profile_public, users.id FROM posts, users WHERE posts.author = users.id AND posts.id = ?" );
-				$p_stmt->bind_param( "s", $parent_post_id );
-				$p_stmt->execute();
-				$p_stmt->bind_result( $parent_post_content, $parent_author_visible_name, $parent_author_profile_public, $parent_author_id );
-				if( $p_stmt->fetch() )
-					{
-					print( "<div class=\"in-reply-to\">In reply to " );
-					if( $parent_author_profile_public == 1 )
-						print( "<a href=\"profile.php?i=$parent_author_id\">$parent_author_visible_name</a>" );
-					else
-						print( "$parent_author_visible_name" );
-					print( "'s post <em><a href=\"post.php?i=$parent_post_id#main-post\">" . getPostSnippet( $parent_post_content ) . "</a></em></div>\n" );
-					}
-				$p_stmt->close();
-				}
-			// Display the actual post
-			print( formatPost( $content ) );
-			// Get comments
-			$comments_stmt = $db2->stmt_init();
-			$comments_sql = "SELECT comments.id, comments.content, comments.created, users.username, users.visible_name, users.real_name, users.profile_public, users.id " .
-			                "FROM comments " .
-			                "JOIN users ON (comments.author = users.id) " .
-							"WHERE comments.post = ? " .
-							"ORDER BY comments.created ASC LIMIT 10";
-			if( $comments_stmt->prepare( $comments_sql ) )
-				{
-				$comments_stmt->bind_param( "s", $post_id );
-				$comments_stmt->execute();
-				$comments_stmt->store_result();
-				$comments_stmt->bind_result( $comment_id, $comment_content, $comment_created, $commenter_username, $commenter_visible_name, $commenter_real_name, $commenter_public, $commenter_id );
-				if( $comments_stmt->num_rows > 0 )
-					print( "<div class=\"comments\">\n" );
-				while( $comments_stmt->fetch() )
-					{
-					print( "<div class=\"comment\"" );
-					if( $commenter_id == $userID )
-						print( "onmouseover=\"javascript:document.getElementById('comment-edit-link-$comment_id').style.display='block';\" onmouseleave=\"javascript:document.getElementById('comment-edit-link-$comment_id').style.display='none';\"" );
-					print( ">\n" );
-					printAuthorInfo( $db2, $userID, $commenter_id, $commenter_username, $commenter_visible_name, $commenter_real_name, $commenter_public, $comment_id, "comment" );
-					$compressed_comment = compressContent( $comment_content );
-					print( "<div class=\"comment-content\"><div class=\"timestamp\">" );
-					if( $commenter_id == $userID )
-						print( "<a onclick=\"javascript:setComposeForEdit('$post_id','compose-post','$compressed_content','$world_name','','','',1);updatePreview('compose-post','post-preview');return false\" href=\"#\">" );
-					print( getAge( $comment_created ) );
-					if( $commenter_id == $userID )
-						print( "</a><br /><div id=\"comment-edit-link-$comment_id\" style=\"float: right; display: none;\"><a onclick=\"javascript:setComposeForEdit('$post_id','compose-comment-$post_id','$compressed_comment','','$comment_id','','',1);updatePreview('compose-comment-$post_id','comment-preview-$post_id');return false;\" href=\"#\">Edit</a></div>" );
-					print( "</div>" . formatPost( $comment_content ) . "</div>" );
-					print( "</div>\n" ); // end .comment
-					}
-				if( $comments_stmt->num_rows > 0 )
-					print( "</div>\n" ); // end .comments
-				}
-			$snippet = getPostSnippet( $content );
-			if( $userID != ""  &&  $userID != 0 )
-				{
-				print( "<div id=\"post-navigation-$post_id\" class=\"post-navigation\" style=\"visibility: hidden\"><a href=\"post.php?i=$post_id#main-post\">View conversation</a> &nbsp; " );
-				if( $author_id == $userID )
-					{
-					$compressed_content = compressContent( $content );
-					$post_is_public = get_db_value( $db, "SELECT public FROM posts WHERE id = ?", "s", $post_id );
-					print( "<a href=\"#\" onclick=\"javascript:setComposeForEdit('$post_id','compose-post','$compressed_content','$world_name','','$editable','$post_is_public',1);updatePreview('compose-post','post-preview');return false;\">Edit</a> &nbsp; <a onclick=\"javascript:displayDelete('$post_id');return false;\" href=\"#\">Delete</a> &nbsp; " );
-					}
-				else
-					{
-					$tracking = get_db_value( $db, "SELECT COUNT(*) FROM tracking WHERE user = ? AND post = ?", "ss", $userID, $post_id );
-					if( $tracking >= 1 )
-						print( "Tracking &nbsp; " );
-					else
-						print( "<a title=\"Get pinged when comments are added to this post.\" href=\"track.php?i=$post_id&redirect=" . getRedirectURL() . "\">Track</a> &nbsp; " );
-					print( "<a title=\"Share this post with people who have you in their teams.\" href=\"broadcast.php?i=$post_id&redirect=" . getRedirectURL() . "\">Broadcast</a> &nbsp; " );
-					}
-				print( "<a onclick=\"javascript:setReplyTo('$post_id', '$author_visible_name', '$snippet');\" href=\"#top\">Reply with post</a> &nbsp; <a onclick=\"javascript:toggleComposePane('compose-tools-$post_id','compose-pane-$post_id','compose-comment-$post_id');return false;\" href=\"#\">Reply with comment</a>&nbsp;&nbsp;</div> <!-- .post-navigation -->\n" );
-				displayComposePane( "comment", $db, $userID, $post_id );
-				}
-			print( "</div>\n" ); // end .post-content
-			print( "</div>\n" ); // end .post
-			$post_index++;
+			$ref = new ReflectionClass( "mysqli_stmt" );
+			$method = $ref->getMethod( "bind_param" );
+			$method->invokeArgs( $stmt, $params );
 			}
-		// If there are more results even than this,
-		if( $post_index < $total_count )
-			{
-			$tab = "";
-			if( isset( $_GET["tab"] ) )
-				$tab = $_GET["tab"];
-			print( "<div id=\"load-more-posts\">\n" );
-			print( "<button onclick=\"javascript:loadMorePosts('$tab','$userID',$post_index);return false;\">Load more results</button>\n" );
-			print( "</div>\n" );
-			}
-		print( "</div>\n" ); // end .post-container
-		}
-		print $db->error;
-		print $stmt->error;
-	}
-
-function displayPostsV2( $db, $db2, $sql, $userID, $max_posts, $param_types, $param1 = "", $param2 = "", $param3 = "" )
-	{
-	$total_count_sql = substr( $sql, strpos( $sql, " FROM " ) );
-	$total_count_sql = substr( $total_count_sql, 0, strpos( $total_count_sql, " ORDER BY " ) );
-	$total_count_sql = "SELECT COUNT(*)" . $total_count_sql;
-	//print( "SQL: $sql<br>\n$total_count_sql<br>" );
-	//print "$param_types $param1 $param2<br>" ;
-	if( $param3 != "" )
-		$total_count = get_db_value( $db, $total_count_sql, $param_types, $param1, $param2, $param3 );
-	elseif( $param2 != "" )
-		$total_count = get_db_value( $db, $total_count_sql, $param_types, $param1, $param2 );
-	elseif( $param1 != "" )
-		$total_count = get_db_value( $db, $total_count_sql, $param_types, $param1 );
-	else
-		$total_count = get_db_value( $db, $total_count_sql );
-	//print( "Total: $total_count<br>\n" );
-	$output = "";
-	$stmt = $db->stmt_init();
-	// If not logged in, only display public posts
-	if( $userID == "" )
-		{
-		$p = strpos( $sql, " WHERE " );
-		if( $p > 0 )
-			$sql = str_replace( " WHERE ", " WHERE posts.public = 1 AND ", $sql );
-		else
-			$sql = str_replace( "ORDER BY", " WHERE posts.public = 1 ORDER BY", $sql );
-		}
-	//print( "FINAL SQL: $sql<br>\n" );
-	if( $stmt->prepare( $sql )  &&  $total_count > 0 )
-		{
-		print( "<div id=\"post-container\" class=\"post-container\">\n" );
-		if( $param3 != "" )
-			$stmt->bind_param( $param_types, $param1, $param2, $param3 );
-		elseif( $param2 != "" )
-			$stmt->bind_param( $param_types, $param1, $param2 );
-		elseif( $param1 != "" )
-			$stmt->bind_param( $param_types, $param1 );
 		$stmt->execute();
 		print $db->error;
 		print $stmt->error;
@@ -250,6 +66,12 @@ function displayPostsV2( $db, $db2, $sql, $userID, $max_posts, $param_types, $pa
 		// If there are more results even than this,
 		if( $post_index < $total_count )
 			{
+			// If we started the query at an offset, add that to post_index.
+			$matches = array();
+			if( preg_match( "/LIMIT ([0-9]+),/", $sql, $matches ) == 1 )
+				{
+				$post_index += intval( $matches[1] );
+				}
 			$tab = "";
 			if( isset( $_GET["tab"] ) )
 				$tab = $_GET["tab"];
@@ -267,7 +89,7 @@ function printCommentEdits( $db, $comment_id )
 	if( ! isset( $display_comment_history )  ||
 	    $display_comment_history != "yes" )
 		return;
-	$num_edits = get_db_value( $db, "SELECT COUNT(*) FROM comment_history WHERE comment = ?", "s", $comment_id );
+	$num_edits = get_db_value( $db, "SELECT COUNT(*) FROM comment_history WHERE comment = ?", array( "s", &$comment_id ) );
 	if( $num_edits > 0 )
 		{
 		print( "<div id=\"comment-history\">\n" );
@@ -316,7 +138,7 @@ function displayPost( $db, $db2, $post_id, $userID )
 		$stmt->fetch();
 		$stmt->close();
 		// If author is blocked, don't display post.
-		$blocked = get_db_value( $db, "SELECT id FROM blocks WHERE blocker = ? AND troll = ?", "ss", $userID, $author_id );
+		$blocked = get_db_value( $db, "SELECT id FROM blocks WHERE blocker = ? AND troll = ?", array( "ss", &$userID, &$author_id ) );
 		if( $blocked != "" )
 			return;
 		// Get world info
@@ -337,7 +159,7 @@ function displayPost( $db, $db2, $post_id, $userID )
 		print( "<div class=\"timestamp\"><a href=\"post.php?i=$post_id#main-post\">" . getAge( $created ) . "</a></div>\n" );
 		if( $editable == 1 )
 			{
-			$timeout = intval( get_db_value( $db, "SELECT timeout FROM post_locks WHERE post = ?", "s", $post_id ) );
+			$timeout = intval( get_db_value( $db, "SELECT timeout FROM post_locks WHERE post = ?", array( "s", &$post_id ) ) );
 			if( $timeout < time() )
 				{
 				$compressed_content = compressContent( $content );
@@ -348,7 +170,7 @@ function displayPost( $db, $db2, $post_id, $userID )
 				}
 			else
 				{
-				$name_of_locked_user = intval( get_db_value( $db, "SELECT visible_name FROM users JOIN post_locks ON (post_locks.user = users.id AND post_locks.post = ?)", "s", $post_id ) );
+				$name_of_locked_user = intval( get_db_value( $db, "SELECT visible_name FROM users JOIN post_locks ON (post_locks.user = users.id AND post_locks.post = ?)", array( "s", &$post_id ) ) );
 				$minutes_until_unlocked = intval( ($timeout - time()) / 60 );
 				$msg = "$minutes_until_unlocked minutes";
 				if( $minutes_until_unlocked == 0 )
@@ -408,7 +230,7 @@ function displayPost( $db, $db2, $post_id, $userID )
 				print( "<div class=\"comments\">\n" );
 			while( $comments_stmt->fetch() )
 				{
-				$blocked = get_db_value( $db, "SELECT id FROM blocks WHERE blocker = ? AND troll = ?", "ss", $userID, $commenter_id );
+				$blocked = get_db_value( $db, "SELECT id FROM blocks WHERE blocker = ? AND troll = ?", array( "ss", &$userID, &$commenter_id ) );
 				if( $blocked == "" )
 					{
 					print( "<div class=\"comment\"" );
@@ -439,13 +261,13 @@ function displayPost( $db, $db2, $post_id, $userID )
 			if( $author_id == $userID )
 				{
 				$compressed_content = compressContent( $content );
-				$post_is_public = get_db_value( $db, "SELECT public FROM posts WHERE id = ?", "s", $post_id );
+				$post_is_public = get_db_value( $db, "SELECT public FROM posts WHERE id = ?", array( "s", &$post_id ) );
 				print( "<a href=\"#\" onclick=\"javascript:setComposeForEdit('$post_id','compose-post','$compressed_content','$world_name','','$editable','$post_is_public',1);updatePreview('compose-post','post-preview');return false;\">Edit</a> &nbsp; <a onclick=\"javascript:displayDelete('$post_id');return false;\" href=\"#\">Delete</a> &nbsp; " );
 				}
 			else
 				{
-				$tracking = get_db_value( $db, "SELECT COUNT(*) FROM tracking WHERE user = ? AND post = ?", "ss", $userID, $post_id );
-				$num_user_comments = get_db_value( $db, "SELECT COUNT(*) FROM comments WHERE author = ? AND post = ?", "ss", $userID, $post_id );
+				$tracking = get_db_value( $db, "SELECT COUNT(*) FROM tracking WHERE user = ? AND post = ?", array( "ss", &$userID, &$post_id ) );
+				$num_user_comments = get_db_value( $db, "SELECT COUNT(*) FROM comments WHERE author = ? AND post = ?", array( "ss", &$userID, &$post_id ) );
 				if( $tracking >= 1  ||  $num_user_comments >= 1 )
 					print( "Tracking &nbsp; " );
 				else
@@ -650,8 +472,8 @@ function editPost( $db, $userID, $post_id, $content, $world, $editable, $comment
 	// Editing a post.
 	// Add history.
 	$original_content = get_db_value( $db, 
-	                    "SELECT content FROM posts WHERE id = ?", "s",
-						$post_id );
+	                    "SELECT content FROM posts WHERE id = ?",
+						array( "s", &$post_id ) );
 	$sql = "INSERT INTO post_history " .
 	       "(id, post, author, edited, original_content) " .
 		   "VALUES (UUID(), ?, ?, ?, ?)";
@@ -664,18 +486,18 @@ function editPost( $db, $userID, $post_id, $content, $world, $editable, $comment
 	$stmt->execute();
 	$stmt->close();
 	// If world is different,
-	$current_world_name_basic = processWorldNameForBasic( get_db_value( $db, "SELECT worlds.basic_name FROM worlds JOIN world_posts ON (world_posts.world = worlds.id AND world_posts.post = ?)", "s", $post_id ) );
+	$current_world_name_basic = processWorldNameForBasic( get_db_value( $db, "SELECT worlds.basic_name FROM worlds JOIN world_posts ON (world_posts.world = worlds.id AND world_posts.post = ?)", array( "s", &$post_id ) ) );
 	$posted_world_name_basic  = processWorldNameForBasic( $world );
 	// Update world.
 	if( $current_world_name_basic != $posted_world_name_basic )
 		{
 		$result = update_db( $db, "DELETE FROM world_posts WHERE post = ?", "s", $post_id );
-		$new_world_id = get_db_value( $db, "SELECT id FROM worlds WHERE basic_name = ?", "s", $posted_world_name_basic );
+		$new_world_id = get_db_value( $db, "SELECT id FROM worlds WHERE basic_name = ?", array( "s", &$posted_world_name_basic ) );
 		if( $new_world_id == "" )
 			{
 			$posted_world_name_display = processWorldNameForDisplay( $world );
 			update_db( $db, "INSERT INTO worlds (id, basic_name, display_name, class) VALUES (UUID(), ?, ?, UUID())", "ss", $posted_world_name_basic, $posted_world_name_display );
-			$new_world_id = get_db_value( $db, "SELECT id FROM worlds WHERE basic_name = ? AND display_name = ?", "ss", $posted_world_name_basic, $posted_world_name_display );
+			$new_world_id = get_db_value( $db, "SELECT id FROM worlds WHERE basic_name = ? AND display_name = ?", array( "ss", &$posted_world_name_basic, $posted_world_name_display ) );
 			}
 		$result = update_db( $db, "INSERT INTO world_posts (id, world, post) VALUES (UUID(), ?, ?)", "ss", $new_world_id, $post_id );
 		$_POST["redirect"] = "world.php?i=$new_world_id";
@@ -703,16 +525,17 @@ function insertPost( $db, $userID, $post_content, $parent, $public, $editable, $
 	           "sissiii", $userID, time(), $post_content, $parent, $public,
 	                      $editable, $comments );
 	$new_post_id = get_db_value( $db, "SELECT id FROM posts WHERE author = ? " .
-	                             "ORDER BY created DESC LIMIT 1", "s", $userID );
+	                             "ORDER BY created DESC LIMIT 1",
+								 array( "s", &$userID ) );
 	if( $world_name != "" )
 		{
 		$full_world_name = processWorldNameForDisplay( $world_name );
 		$basic_world_name = processWorldNameForBasic( $world_name );
-		$world_id = get_db_value( $db, "SELECT id FROM worlds WHERE basic_name = ?", "s", $basic_world_name );
+		$world_id = get_db_value( $db, "SELECT id FROM worlds WHERE basic_name = ?", array( "s", &$basic_world_name ) );
 		if( $world_id == "" )
 			{ // It doesn't exist, so create it
 			update_db( $db, "INSERT INTO worlds (id, basic_name, display_name, class) VALUES (UUID(), ?, ?, UUID())", "ss", $basic_world_name, $full_world_name );
-			$world_id = get_db_value( $db, "SELECT id FROM worlds WHERE basic_name = ?", "s", $basic_world_name );
+			$world_id = get_db_value( $db, "SELECT id FROM worlds WHERE basic_name = ?", array( "s", &$basic_world_name ) );
 			}
 		update_db( $db, "INSERT INTO world_posts (id, world, post) VALUES (UUID(), ?, ?)", "ss", $world_id, $new_post_id );
 		}
@@ -742,11 +565,11 @@ function insertPost( $db, $userID, $post_content, $parent, $public, $editable, $
 		$match = substr( $match, $pos + 2 );
 		$match = substr( $match, 0, strlen($match) - 1 );
 		// If not already tracking,
-		$is_tracking = get_db_value( $db, "SELECT pings.id FROM pings JOIN users ON (users.id = pings.user AND users.visible_name = ?) WHERE content_id = ?", "ss", $match, $new_post_id );
+		$is_tracking = get_db_value( $db, "SELECT pings.id FROM pings JOIN users ON (users.id = pings.user AND users.visible_name = ?) WHERE content_id = ?", array( "ss", &$match, &$new_post_id ) );
 		if( $is_tracking == "" )
 			{
 			// Add ping.
-			$match_user_id = get_db_value( $db, "SELECT id FROM users WHERE users.visible_name = ?", "s", $match );
+			$match_user_id = get_db_value( $db, "SELECT id FROM users WHERE users.visible_name = ?", array( "s", &$match ) );
 			update_db( $db, "INSERT INTO pings (id, user, created, content_type, content_id, is_read) VALUES (UUID(), ?, ?, 'm', ?, 0)", "sis", $match_user_id, time(), $new_post_id );
 			}
 		}
@@ -756,8 +579,8 @@ function editComment( $db, $userID, $comment_id, $content )
 	{
 	// Add history.
 	$original_content = get_db_value( $db, 
-	                    "SELECT content FROM comments WHERE id = ?", "s",
-						$comment_id );
+	                    "SELECT content FROM comments WHERE id = ?",
+						array( "s", &$comment_id ) );
 	$sql = "INSERT INTO comment_history " .
 	       "(id, comment, author, edited, original_content) " .
 		   "VALUES (UUID(), ?, ?, ?, ?)";

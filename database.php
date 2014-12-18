@@ -49,7 +49,7 @@ function rebuild_db( $db, $admin, $crypt_salt )
 	$start_time = 1412898245; // A convenient time for the beginning of time. All other times are calculated off this.
 	$result = $db->query( "DROP TABLE users" );
 	$result = $db->query( 'CREATE TABLE users (id CHAR(36) NOT NULL PRIMARY KEY, username TEXT NOT NULL, visible_name TEXT NOT NULL, password TEXT NOT NULL, real_name TEXT, created INTEGER NOT NULL, paid BOOLEAN NOT NULL, profile_public BOOLEAN NOT NULL, admin BOOLEAN NOT NULL)' );
-	$result = $db->query( 'INSERT INTO users (id, username, password, real_name, visible_name, created, paid, profile_public, admin) VALUES (UUID(), "' . $admin . '", "' . crypt( "bd8FG09ast", $crypt_salt ) . '", "Brent P. Newhall", "Brent P. Newhall", "' . $start_time . '", 1, 1, 1)' );
+	$result = $db->query( 'INSERT INTO users (id, username, password, real_name, visible_name, created, paid, profile_public, admin) VALUES (UUID(), "' . $admin . '", "' . crypt( "atreides", $crypt_salt ) . '", "Brent P. Newhall", "Brent P. Newhall", "' . $start_time . '", 1, 1, 1)' );
 	$userIdAdmin = get_db_value( $db, "SELECT MAX(id) FROM users" );
 	add_avatar_image_to_db( $db, $userIdAdmin, "assets/images/avatar1.png" );
 	$result = $db->query( 'INSERT INTO users (id, username, visible_name, password, created, paid, profile_public, admin) VALUES (UUID(), "JamesKirk", "James Kirk", "' . crypt( "blah", $crypt_salt ) . '", "' . ($start_time + 100) . '", 1, 1, 0)' );
@@ -78,11 +78,14 @@ function rebuild_db( $db, $admin, $crypt_salt )
 	$result = $db->query( 'INSERT INTO user_phones (user, phone, carrier, public) VALUES ("' . $userIdAdmin . '", "7034701289", "' . $att_carrier_id . '", 1)' );
 	$result = $db->query( "DROP TABLE user_groups" );
 	$result = $db->query( 'CREATE TABLE user_groups (id CHAR(36) NOT NULL PRIMARY KEY, user CHAR(36) NOT NULL, name TEXT)' );
-	$result = $db->query( 'INSERT INTO user_groups (id, user, name) VALUES (UUID(), "' . $userIdAdmin . '", "Friends")' );
-	$user_group_id = get_db_value( $db, "SELECT MAX(id) FROM user_groups" );
+	$result = $db->query( "INSERT INTO user_groups (id, user, name) VALUES (UUID(), '$userIdAdmin', 'Friends')" );
+	$groupAdminFriends = get_db_value( $db, "SELECT MAX(id) FROM user_groups" );
+	$result = $db->query( "INSERT INTO user_groups (id, user, name) VALUES (UUID(), '$userIdKirk', 'Friends')" );
+	$groupKirkFriends = get_db_value( $db, "SELECT MAX(id) FROM user_groups" );
 	$result = $db->query( "DROP TABLE user_group_members" );
 	$result = $db->query( 'CREATE TABLE user_group_members (usergroup CHAR(36) NOT NULL, user CHAR(36) NOT NULL)' );
-	$result = $db->query( 'INSERT INTO user_group_members (usergroup, user) VALUES ("' . $user_group_id . '", "' . $userIdKirk . '")' );
+	$result = $db->query( 'INSERT INTO user_group_members (usergroup, user) VALUES ("' . $groupAdminFriends . '", "' . $userIdKirk . '")' );
+	$result = $db->query( 'INSERT INTO user_group_members (usergroup, user) VALUES ("' . $groupKirkFriends . '", "' . $userIdAdmin . '")' );
 	$result = $db->query( "DROP TABLE blocks" );
 	$result = $db->query( 'CREATE TABLE blocks (id CHAR(36) NOT NULL PRIMARY KEY, blocker CHAR(36) NOT NULL, troll CHAR(36) NOT NULL)' );
 	$result = $db->query( "DROP TABLE account_recovery" );
@@ -101,6 +104,8 @@ function rebuild_db( $db, $admin, $crypt_salt )
 	$postPicard1 = get_db_value( $db, "SELECT MAX(id) FROM posts" );
 	$result = $db->query( "DROP TABLE post_groups" );
 	$result = $db->query( 'CREATE TABLE post_groups (post CHAR(36) NOT NULL, usergroup CHAR(36) NOT NULL)' );
+	$result = $db->query( "INSERT INTO post_groups (post, usergroup) VALUES ('$postAdmin1','$groupAdminFriends')" );
+	$result = $db->query( "INSERT INTO post_groups (post, usergroup) VALUES ('$postKirk1','$groupKirkFriends')" );
 	$result = $db->query( "DROP TABLE comments" );
 	$result = $db->query( 'CREATE TABLE comments (id CHAR(36) NOT NULL PRIMARY KEY, created INT NOT NULL, author CHAR(36) NOT NULL, post CHAR(36) NOT NULL, content TEXT)' );
 	$result = $db->query( 'INSERT INTO comments (id, created, author, post, content) VALUES (UUID(), ' . ($start_time + 1000) . ', "' . $userIdKirk . '", "' . $postAdmin1 . '", "That is a **very** interesting point.")' );
@@ -108,21 +113,26 @@ function rebuild_db( $db, $admin, $crypt_salt )
 	print $db->error;
 	}
 
-function get_db_value( $db, $query, $param_types = '', $param1 = '', 
-                       $param2 = '', $param3 = '' )
+/* function get_db_value( $db, $query, $param_types = NULL, $param1 = NULL, 
+                       $param2 = NULL, $param3 = NULL ) */
+function get_db_value( $db, $query, $params = NULL )
 	{
 	$stmt = $db->stmt_init();
 	$stmt = $db->prepare( $query );
 	if( $stmt->error )
 		print $stmt->error;
-	print $stmt->error;
-	print $db->error;
-	if( $param3 != '' )
+	/* if( ! is_null( $param3 ) )
 		$stmt->bind_param( $param_types, $param1, $param2, $param3 );
-	elseif( $param2 != '' )
+	elseif( ! is_null( $param2 ) )
 		$stmt->bind_param( $param_types, $param1, $param2 );
-	elseif( $param1 != '' )
-		$stmt->bind_param( $param_types, $param1 );
+	elseif( ! is_null( $param1 ) )
+		$stmt->bind_param( $param_types, $param1 ); */
+	if( ! is_null( $params ) )
+		{
+		$ref = new ReflectionClass( "mysqli_stmt" );
+		$method = $ref->getMethod( "bind_param" );
+		$method->invokeArgs( $stmt, $params );
+		}
 	$stmt->execute();
 	$stmt->bind_result( $value );
 	$stmt->fetch();
@@ -130,30 +140,34 @@ function get_db_value( $db, $query, $param_types = '', $param1 = '',
 	return $value;
 	}
 
-function update_db( $db, $query, $param_types = '', $param1 = '', 
-                    $param2 = '', $param3 = '', $param4 = '',
-					$param5 = '', $param6 = '', $param7 = '' )
+function update_db( $db, $query, $param_types = NULL, $param1 = NULL, 
+                    $param2 = NULL, $param3 = NULL, $param4 = NULL,
+					$param5 = NULL, $param6 = NULL, $param7 = NULL,
+					$param8 = NULL )
 	{
 	$stmt = $db->stmt_init();
 	$stmt = $db->prepare( $query );
 	if( $stmt->error )
 		print $stmt->error;
-	if( $param7 != '' )
+	if( ! is_null( $param8 ) )
+		$stmt->bind_param( $param_types, $param1, $param2, $param3, $param4, 
+		                   $param5, $param6, $param7, $param8 );
+	elseif( ! is_null( $param7 ) )
 		$stmt->bind_param( $param_types, $param1, $param2, $param3, $param4, 
 		                   $param5, $param6, $param7 );
-	elseif( $param6 != '' )
+	elseif( ! is_null( $param6 ) )
 		$stmt->bind_param( $param_types, $param1, $param2, $param3, $param4, 
 		                   $param5, $param6 );
-	elseif( $param5 != '' )
+	elseif( ! is_null( $param5 ) )
 		$stmt->bind_param( $param_types, $param1, $param2, $param3, $param4,
 		                   $param5 );
-	elseif( $param4 != '' )
+	elseif( ! is_null( $param4 ) )
 		$stmt->bind_param( $param_types, $param1, $param2, $param3, $param4 );
-	elseif( $param3 != '' )
+	elseif( ! is_null( $param3 ) )
 		$stmt->bind_param( $param_types, $param1, $param2, $param3 );
-	elseif( $param2 != '' )
+	elseif( ! is_null( $param2 ) )
 		$stmt->bind_param( $param_types, $param1, $param2 );
-	elseif( $param1 != '' )
+	elseif( ! is_null( $param1 ) )
 		$stmt->bind_param( $param_types, $param1 );
 	$stmt->execute();
 	$stmt->fetch();
@@ -450,6 +464,29 @@ function getGUID()
 
 $userID = "";
 if( isset( $_SESSION["logged_in"] ) )
-	$userID = get_db_value( $db, "SELECT id FROM users WHERE username = ?", "s", $_SESSION["logged_in"] );
+	{
+	$userID = get_db_value( $db, "SELECT id FROM users WHERE username = ?", array( "s", &$_SESSION["logged_in"] ) );
+	/*$use_facebook = get_db_value( $db, "SELECT facebook FROM users WHERE id = ?", "s", $userID );
+	if( $use_facebook == 1 )
+		{ */
+		//require_once( "assets/libraries/facebook/autoload.php" );
+		//require_once( "assets/libraries/facebook/src/Facebook/FacebookSession.php" );
+		//require_once( "assets/libraries/facebook/src/Facebook/FacebookRequest.php" );
+		//require_once( "assets/libraries/facebook/src/Facebook/GraphUser.php" );
+		//require_once( "assets/libraries/facebook/src/Facebook/FacebookRequestException.php" );
+		//use Facebook\FacebookSession;
+		//FacebookSession::setDefaultApplication("APP-ID","SECRET");
+		//$facebook = new FacebookSession( "ACCESS-TOKEN" );
+		/* $facebook_user = $facebook->getUser();
+		$facebook_loginURL = $facebook->getLoginUrl(
+			array( "scope" => "publish_stream" )
+			);
+		if( $facebook_user )
+			{
+			$facebook_user_profile = $facebook->api( "/me" );
+			$facebook_access_token = $facebook->getAccessToken();
+			} */
+		//}
+	}
 
 ?>

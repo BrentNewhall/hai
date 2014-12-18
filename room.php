@@ -37,10 +37,10 @@ else
 if( ( isset( $_GET["join"] )  ||  isset( $_POST["join"] ) )  &&
     $userID != ""  &&  $room_id != "" )
 	{
-	$invite_only = get_db_value( $db, "SELECT invite_only FROM rooms WHERE id = ?", "s", $room_id );
+	$invite_only = get_db_value( $db, "SELECT invite_only FROM rooms WHERE id = ?", array( "s", &$room_id ) );
 	if( $invite_only == 0 )
 		{
-		$password = get_db_value( $db, "SELECT password FROM rooms WHERE id = ?", "s", $room_id );
+		$password = get_db_value( $db, "SELECT password FROM rooms WHERE id = ?", array( "s", &$room_id ) );
 		if( $password == ""  ||
 		    ( isset( $_POST["password"] )  &&
 		      crypt( $_POST["password"], $crypt_salt ) == $password ) )
@@ -68,7 +68,7 @@ if( ( isset( $_GET["join"] )  ||  isset( $_POST["join"] ) )  &&
 // Leave a room
 if( isset( $_GET["leave"] )  &&  $userID != ""  &&  $room_id != "" )
 	{
-	$in_room = get_db_value( $db, "SELECT id FROM room_members WHERE room = ? and user = ?", "ss", $room_id, $userID );
+	$in_room = get_db_value( $db, "SELECT id FROM room_members WHERE room = ? and user = ?", array( "ss", &$room_id, &$userID ) );
 	if( $in_room != "" )
 		{
 		update_db( $db, "DELETE FROM room_members WHERE id = ?", "s", $in_room );
@@ -86,7 +86,7 @@ if( isset( $_POST['compose-post'] ) )
 	else
 		{
 		// The post's public flag inherits its value from the room.
-		$room_is_public = get_db_value( $db, "SELECT public FROM rooms WHERE id = ?", "s", $room_id );
+		$room_is_public = get_db_value( $db, "SELECT public FROM rooms WHERE id = ?", array( "s", &$room_id ) );
 		$sql = "INSERT INTO posts (id, author, created, content, " .
 		                          "parent, public) " .
 								  "VALUES (UUID(), ?, ?, ?, '', ?)";
@@ -95,7 +95,7 @@ if( isset( $_POST['compose-post'] ) )
 		$stmt->bind_param( "sisi", $userID, time(), $_POST["compose-post"], $room_is_public );
 		$stmt->execute();
 		$stmt->close();
-		$new_post_id = get_db_value( $db, "SELECT id FROM posts WHERE author = ? ORDER BY created DESC LIMIT 1", "s", $userID );
+		$new_post_id = get_db_value( $db, "SELECT id FROM posts WHERE author = ? ORDER BY created DESC LIMIT 1", array( "s", &$userID ) );
 		$sql = "INSERT INTO room_posts (id, room, post) " .
 								  "VALUES (UUID(), ?, ?)";
 		$stmt = $db->stmt_init();
@@ -111,7 +111,7 @@ if( isset( $_GET["action"] )  &&  $_GET["action"] == "kick" )
 	{
 	// If user is a member of a room
 	$user_id = $_GET["user"];
-	$member = get_db_value( $db, "SELECT id FROM room_members WHERE room = ? AND user = ?", "ss", $room_id, $user_id );
+	$member = get_db_value( $db, "SELECT id FROM room_members WHERE room = ? AND user = ?", array( "ss", &$room_id, &$user_id ) );
 	if( $member != "" )
 		{
 		// Remove that record
@@ -125,7 +125,7 @@ if( isset( $_GET["action"] )  &&  $_GET["action"] == "op" )
 	{
 	// If user is a member of a room
 	$user_id = $_GET["user"];
-	$member = get_db_value( $db, "SELECT id FROM room_members WHERE room = ? AND user = ?", "ss", $room_id, $user_id );
+	$member = get_db_value( $db, "SELECT id FROM room_members WHERE room = ? AND user = ?", array( "ss", &$room_id, &$user_id ) );
 	if( $member != "" )
 		{
 		// Update room record
@@ -140,7 +140,7 @@ if( isset( $_GET["action"] )  &&  $_GET["action"] == "deop" )
 	{
 	// If user is a member of a room
 	$user_id = $_GET["user"];
-	$member = get_db_value( $db, "SELECT id FROM room_members WHERE room = ? AND user = ?", "ss", $room_id, $user_id );
+	$member = get_db_value( $db, "SELECT id FROM room_members WHERE room = ? AND user = ?", array( "ss", &$room_id, &$user_id ) );
 	if( $member != "" )
 		{
 		// Update room record
@@ -198,7 +198,7 @@ if( isset( $_POST["new-room"] )  &&
 			$stmt->bind_param( "ssiiis", $room_name, $topic, $public, $hidden, $invite_only, $password );
 			$stmt->execute();
 			$stmt->close();
-			$room_id = get_db_value( $db, "SELECT id FROM rooms WHERE name = ?", "s", $room_name );
+			$room_id = get_db_value( $db, "SELECT id FROM rooms WHERE name = ?", array( "s", &$room_name ) );
 			$stmt = $db->stmt_init();
 			$sql = "INSERT INTO room_members (id, room, user, op) VALUES (UUID(), ?, ?, 1)";
 			$stmt->prepare( $sql );
@@ -230,7 +230,7 @@ if( isset( $_POST["edit-room"] )  &&  $_POST["edit-room"] != "" )
 	if( isset( $_POST["password"] )  &&  $_POST["password"] != "" )
 		$new_password = $_POST["password"];
 	// New name must not exist.
-	$new_name_exists = get_db_value( $db, "SELECT id FROM rooms WHERE name = ? AND id <> ?", "ss", $new_room_name, $room_id );
+	$new_name_exists = get_db_value( $db, "SELECT id FROM rooms WHERE name = ? AND id <> ?", array( "ss", &$new_room_name, &$room_id ) );
 	// New password must be valid.
 	if( $new_name_exists != "" )
 		print( "<p class=\"error\">That name already exists.</p>\n" );
@@ -337,7 +337,7 @@ function displayOptionsTable( $room_id = "", $name = "", $topic = "", $public = 
 function displayOpInterface( $db, $userID, $room_id )
 	{
 	// If not an op, return nothing.
-	$is_op = get_db_value( $db, "SELECT op FROM room_members WHERE user = ? AND room = ?", "ss", $userID, $room_id );
+	$is_op = get_db_value( $db, "SELECT op FROM room_members WHERE user = ? AND room = ?", array( "ss", &$userID, &$room_id ) );
 	if( ! $is_op )
 		return;
 	$stmt = $db->stmt_init();
@@ -358,9 +358,9 @@ if( $room_name == "" )
 
 if( $room_name != ""  &&  $userID != "" )
 	{
-	$subscribed = get_db_value( $db, "SELECT COUNT(*) FROM room_members WHERE user = ? AND room = ?", "ss", $userID, $room_id );
-	$invite_only = get_db_value( $db, "SELECT invite_only FROM rooms WHERE id = ?", "s", $room_id );
-	$password = get_db_value( $db, "SELECT password FROM rooms WHERE id = ?", "s", $room_id );
+	$subscribed = get_db_value( $db, "SELECT COUNT(*) FROM room_members WHERE user = ? AND room = ?", array( "ss", &$userID, &$room_id ) );
+	$invite_only = get_db_value( $db, "SELECT invite_only FROM rooms WHERE id = ?", array( "s", &$room_id ) );
+	$password = get_db_value( $db, "SELECT password FROM rooms WHERE id = ?", array( "s", &$room_id ) );
 	if( $subscribed == 1 )
 		print( "<div style=\"float: right\"><input type=\"submit\" name=\"subscribe\" value=\"Member\" disabled /></div>\n" );
 	elseif( $invite_only == 0  &&  $password == "" )
@@ -379,7 +379,7 @@ if( $room_name != "" )
 	if( $userID == "" )
 		$login_user_is_op = 0;
 	else
-		$login_user_is_op = get_db_value( $db, "SELECT op FROM room_members WHERE room = ? AND user = ?", "ss", $room_id, $userID );
+		$login_user_is_op = get_db_value( $db, "SELECT op FROM room_members WHERE room = ? AND user = ?", array( "ss", &$room_id, &$userID ) );
 	print( "<div class=\"room-members\" onload=\"javascript:alert('Hello');\">\n" .
 	       "Moderators:<br />\n" );
 	$sql = "SELECT users.id, users.visible_name, users.real_name, users.profile_public, room_members.op FROM room_members JOIN users ON (users.id = room_members.user) WHERE room_members.room = ? ORDER BY op DESC, users.visible_name";
@@ -420,7 +420,7 @@ if( $room_name != "" )
 		}
 	print( "</div>\n" );
 	$is_member = 0;
-	if( $userID != ""  &&  get_db_value( $db, "SELECT id FROM room_members WHERE room = ? AND user = ?", "ss", $room_id, $userID ) != "" )
+	if( $userID != ""  &&  get_db_value( $db, "SELECT id FROM room_members WHERE room = ? AND user = ?", array( "ss", &$room_id, &$userID ) ) != "" )
 		$is_member = 1;
 	// Display compose pane
 	if( $is_member  &&  $userID != "" )
@@ -434,7 +434,7 @@ if( $room_name != "" )
 		   "JOIN room_posts ON (room_posts.post = posts.id AND room_posts.room = ?) " .
 		   "LEFT JOIN broadcasts ON (broadcasts.id = posts.id) " .
 	       "ORDER BY posts.created DESC";
-	displayPostsV2( $db, $db2, $sql, $userID, 25, "s", $room_id );
+	displayPosts( $db, $db2, $sql, $userID, 25, array( "s", &$room_id ) );
 	displayOpInterface( $db, $userID, $room_id );
 	// Create an empty style element just to auto-expand the compose window.
 	print( "<style onload=\"javascript:toggleComposePane('compose-tools','compose-pane','compose-post');\"></style>\n" );
@@ -442,7 +442,7 @@ if( $room_name != "" )
 	if( $is_member )
 		print( "<div style=\"text-align: right\"><form action=\"room.php\" method=\"get\"><input type=\"hidden\" name=\"i\" value=\"$room_id\" /><input type=\"submit\" name=\"leave\" value=\"Leave room\"></form></div>\n" );
 	// Start auto-update of room
-	$latest_post_time = get_db_value( $db, "SELECT MAX(created) FROM posts JOIN room_posts ON room_posts.post = posts.id AND room_posts.room = ?", "s", $room_id );
+	$latest_post_time = get_db_value( $db, "SELECT MAX(created) FROM posts JOIN room_posts ON room_posts.post = posts.id AND room_posts.room = ?", array( "s", &$room_id ) );
 	// Load latest posts every 5 seconds.
 	print( "<script type='text/javascript'>\n" .
 	       "function loadLatestPostsLoop() {\n" .

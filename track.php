@@ -14,7 +14,7 @@ if( $userID == "" )
 	{  header( "Location: index.php?error=201\n\n" ); exit( 0 );  }
 
 // As long as monitor doesn't already exist...
-$track_exists = get_db_value( $db, "SELECT id FROM tracking WHERE post = ? AND user = ?", "ss", $post_id, $userID );
+$track_exists = get_db_value( $db, "SELECT id FROM tracking WHERE post = ? AND user = ?", array( "ss", &$post_id, &$userID ) );
 if( $track_exists != "" )
 	{  header( "Location: index.php?error=201\n\n" ); exit( 0 );  }
 

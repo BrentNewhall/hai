@@ -43,14 +43,14 @@ if( isset( $_POST["security-question-username"] )  && isset( $_POST["security-an
 	$actual_answer = get_db_value( $db, "SELECT answer " .
 	                                    "FROM security_questions JOIN users " .
 										"ON security_questions.user = users.id " .
-										"WHERE users.username = ?", "s",
-										$username );
+										"WHERE users.username = ?", array( "s",
+										&$username ) );
 	if( $typed_answer == $actual_answer  &&  $typed_answer != "" )
 		{
 		// It's correct, so create account recovery record and set variables
 		//to redirect user to correct page.
 		$user_id = get_db_value( $db, "SELECT id FROM users WHERE username = ?",
-		                              "s", $username );
+		                              array( "s", &$username ) );
 		update_db( $db, "INSERT INTO account_recovery (id, created, user) " .
 		                "VALUES (UUID(), ?, ?)", "is", time(), $user_id );
 		$recovery_id = get_db_value( $db, "SELECT id FROM account_recovery " .

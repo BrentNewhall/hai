@@ -13,7 +13,7 @@ if( $elements[0] == "world"  ||
 	$world_name = urldecode( $elements[1] );
 	$world_name = processWorldNameForBasic( $world_name );
 	$world_id = get_db_value( $db, "SELECT id FROM worlds " .
-	                               "WHERE basic_name = ?", "s", $world_name );
+	                               "WHERE basic_name = ?", array( "s", &$world_name ) );
 	if( $world_id != "" )
 		{
 		//$_GET["i"] = $world_id;
@@ -29,7 +29,7 @@ elseif( $elements[0] == "room"  ||
 	require_once "functions.php";
 	$room_name = urldecode( strtolower( $elements[1] ) );
 	$room_id = get_db_value( $db, "SELECT id FROM rooms " .
-	                              "WHERE LOWER(name) = ?", "s", $room_name );
+	                              "WHERE LOWER(name) = ?", array( "s", &$room_name ) );
 	if( $room_id != "" )
 		{
 		//$_GET["i"] = $room_id;
@@ -44,7 +44,7 @@ elseif( $elements[0] == "user" )
 	require_once "functions.php";
 	$username = urldecode( $elements[1] );
 	$user_id = get_db_value( $db, "SELECT id FROM users " .
-	                              "WHERE username = ?", "s", $username );
+	                              "WHERE username = ?", array( "s", &$username ) );
 	if( $user_id != "" )
 		{
 		//$_GET["i"] = $user_id;

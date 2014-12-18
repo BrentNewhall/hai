@@ -41,7 +41,7 @@ function getCheckboxCell( $id, $db, $item, $type )
 		{
 		// Pull from type
 		$singular_type = substr( $type, 0, strlen($type) - 1 );
-		$public = get_db_value( $db, "SELECT public FROM user_$type WHERE user = ? AND $singular_type = ?", "ss", $userID, $item );
+		$public = get_db_value( $db, "SELECT public FROM user_$type WHERE user = ? AND $singular_type = ?", array( "ss", &$userID, &$item ) );
 		if( $public )
 			$result .= "checked=\"checked\" ";
 		}
@@ -55,7 +55,7 @@ function getCarriersBox( $db, $item )
 	global $userID;
 	$user_carrier_id = "";
 	if( $item != "" )
-		$user_carrier_id = get_db_value( $db, "SELECT carrier FROM user_phones WHERE user = ? AND phone = ?", "ss", $userID, $item );
+		$user_carrier_id = get_db_value( $db, "SELECT carrier FROM user_phones WHERE user = ? AND phone = ?", array( "ss", &$userID, &$item ) );
 	$text = "<td><select name=\"carriers[]\">\n";
 	$stmt = $db->stmt_init();
 	$stmt->prepare( "SELECT id, name FROM carriers ORDER BY name" );
@@ -219,7 +219,7 @@ if( isset( $_POST["visible-name"] ) )
 	if( isset( $question )  &&  $question != "" )
 		{
 		print( "Getting number of records<br>\n" );
-		$num_entries = get_db_value( $db, "SELECT COUNT(*) FROM security_questions WHERE user = ?", "s", $userID );
+		$num_entries = get_db_value( $db, "SELECT COUNT(*) FROM security_questions WHERE user = ?", array( "s", &$userID ) );
 		print( "$num_entries records<br>\n" );
 		if( $num_entries == 0 )
 			update_db( $db, "INSERT INTO security_questions (id, user, question, answer) VALUES (UUID(), ?, ?, ' ')", "ss", $userID, $question );
@@ -325,7 +325,7 @@ printSet( $db, $phones, "phones" );
 <p>A good question is one that has many possible answers, but where the answer is unique to you, does not change over time, and is not likely to be posted on public websites. A good example: "What did I call the stuffed animal I brought to fourth grade show-and-tell?"</p>
 <p><strong>Warning:</strong> Anyone who knows your username will be able to see this question, so make it personal!</p>
 <?php
-$question = get_db_value( $db, "SELECT question FROM security_questions WHERE user = ?", "s", $userID );
+$question = get_db_value( $db, "SELECT question FROM security_questions WHERE user = ?", array( "s", &$userID ) );
 print( "Question: <input type=\"text\" name=\"security-question\" value=\"$question\" size=\"40\" /><br />\n" );
 if( $question != "" )
 	print( "Your answer to this question is stored (and encrypted). To change it, enter a new answer here: " );

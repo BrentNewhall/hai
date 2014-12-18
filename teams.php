@@ -3,7 +3,7 @@ require_once( "database.php" );
 if( isset( $_POST["rename-team"] )  &&  $userID != "" )
 	{
 	print( "Checking...<br>\n" );
-	$team_name = get_db_value( $db, "SELECT name FROM user_teams WHERE id = ?", "s", $_POST["t"] );
+	$team_name = get_db_value( $db, "SELECT name FROM user_teams WHERE id = ?", array( "s", &$_POST["t"] ) );
 	if( $team_name != "" )
 		{
 		$new_name = strip_tags( $_POST["new-name"] );
@@ -20,7 +20,7 @@ if( isset( $_POST["rename-team"] )  &&  $userID != "" )
 
 $team_name = "";
 if( isset( $_GET["t"] )  &&  $_GET["t"] != "" )
-	$team_name = get_db_value( $db, "SELECT name FROM user_teams WHERE id = ?", "s", $_GET["t"] );
+	$team_name = get_db_value( $db, "SELECT name FROM user_teams WHERE id = ?", array( "s", &$_GET["t"] ) );
 if( $team_name != "" )
 	$page_title = "$team_name Team";
 else
@@ -41,7 +41,7 @@ if( isset( $_POST["update-team"] )  &&  $userID != "" )
 	$stmt->close();
 	foreach( array_keys( $members ) as $user_id )
 		{
-		$found = get_db_value( $db, "SELECT COUNT(*) FROM users WHERE id = ?", "s", $user_id );
+		$found = get_db_value( $db, "SELECT COUNT(*) FROM users WHERE id = ?", array( "s", &$user_id ) );
 		if( $found == 1 )
 			{
 			$stmt = $db->stmt_init();
@@ -90,7 +90,7 @@ if( isset( $_POST["new-team"] )  &&
 
 if( isset( $_GET["t"] )  &&  $_GET["t"] != "" )
 	{
-	$team_name = get_db_value( $db, "SELECT name FROM user_teams WHERE id = ?", "s", $_GET["t"] );
+	$team_name = get_db_value( $db, "SELECT name FROM user_teams WHERE id = ?", array( "s", &$_GET["t"] ) );
 	if( $team_name != "" )
 		{
 		print( "<form action=\"teams.php\" method=\"post\">\n" );

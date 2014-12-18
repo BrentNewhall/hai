@@ -12,8 +12,8 @@ if( ( isset( $_GET["i"] )  &&  $_GET["i"] != "" )  ||
 		$room_id = $_GET["i"];
 	else
 		$room_id = $_POST["i"];
-	$room_name   = get_db_value( $db, "SELECT name FROM rooms WHERE id = ?", "s", $room_id );
-	$room_hidden = get_db_value( $db, "SELECT hidden FROM rooms WHERE id = ?", "s", $room_id );
+	$room_name   = get_db_value( $db, "SELECT name FROM rooms WHERE id = ?", array( "s", &$room_id ) );
+	$room_hidden = get_db_value( $db, "SELECT hidden FROM rooms WHERE id = ?", array( "s", &$room_id ) );
 	if( $room_hidden == 1  ||  $room_name == "" )
 		{
 		// This room is hidden or doesn't exist, so pretend it doesn't exist.
@@ -29,14 +29,14 @@ if( ( isset( $_GET["i"] )  &&  $_GET["i"] != "" )  ||
 // Join a room
 if( isset( $_POST["users"] )  &&  $userID != ""  &&  $room_id != "" )
 	{
-	$invite_only = get_db_value( $db, "SELECT invite_only FROM rooms WHERE id = ?", "s", $room_id );
+	$invite_only = get_db_value( $db, "SELECT invite_only FROM rooms WHERE id = ?", array( "s", &$room_id ) );
 	if( $invite_only == 0 )
 		{
 		$users = $_POST["users"];
 		// Add all users in list, if they're not already members
 		foreach( $users as $user_id )
 			{
-			$in_room = get_db_value( $db, "SELECT id FROM room_members WHERE room = ? AND user = ?", "ss", $room_id, $user_id );
+			$in_room = get_db_value( $db, "SELECT id FROM room_members WHERE room = ? AND user = ?", array( "ss", &$room_id, &$user_id ) );
 			//print( "Room id $room_id, user id $user_id, in room $in_room<br>\n" );
 			if( $in_room == "" )
 				{

@@ -2,13 +2,14 @@
 
 // Returns more paged posts
 
-function fixSQL( $sql, $start_index )
-	{
-	return str_replace( "LIMIT 25", "LIMIT $start_index, 25", $sql );
-	}
-
 require_once( "database.php" );
 require_once( "functions.php" );
+
+function fixSQL( $sql, $start_index, $posts_per_page )
+	{
+	return str_replace( "LIMIT $posts_per_page", "LIMIT $start_index, $posts_per_page", $sql );
+	}
+
 $tab = 0;
 if( isset( $_GET["tab"] ) )
 	$tab = $_GET["tab"];
@@ -35,7 +36,6 @@ if( isset( $_GET["r"] ) )
 		   "JOIN room_posts ON (room_posts.post = posts.id AND room_posts.room = ?) " .
 	       "WHERE posts.created > $last_post_time " .
 	       "ORDER BY posts.created DESC";
-	//displayPostsV2( $db, $db2, $sql, 0, $posts_per_page, "s", $room_id );
 	//print $sql;
 	$stmt = $db->stmt_init();
 	if( $stmt->prepare( $sql ) )
@@ -69,18 +69,18 @@ else
 	// Loading more posts
 	if( $tab == "Everything" )
 		{
-		$sql = fixSQL( getStandardSQL( "Everything" ), $start_index );
-		displayPostsV2( $db, $db2, $sql, $userID, $posts_per_page, "none" );
+		$sql = fixSQL( getStandardSQL( "Everything" ), $start_index, $posts_per_page );
+		displayPosts( $db, $db2, $sql, $userID, $posts_per_page );
 		}
 	elseif( $tab != "" )
 		{
-		$sql = fixSQL( getStandardSQL( "team" ), $start_index );
-		displayPostsV2( $db, $db2, $sql, $userID, $posts_per_page, "ss", $tab, $userID );
+		$sql = fixSQL( getStandardSQL( "team" ), $start_index, $posts_per_page );
+		displayPosts( $db, $db2, $sql, $userID, $posts_per_page, array( "ss", &$tab, &$userID ) );
 		}
 	else
 		{
-		$sql = fixSQL( getStandardSQL( "all" ), $start_index );
-		displayPostsV2( $db, $db2, $sql, $userID, $posts_per_page, "ss", $userID, $userID );
+		$sql = fixSQL( getStandardSQL( "all" ), $start_index, $posts_per_page );
+		displayPosts( $db, $db2, $sql, $userID, $posts_per_page, array( "ss", &$userID, &$userID ) );
 		}
 	}
 ?>

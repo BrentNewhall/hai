@@ -18,5 +18,5 @@ $sql = getStandardSQLselect() .
 	   "LEFT JOIN broadcasts ON (broadcasts.id = posts.id) " .
        "WHERE posts.id = ? ORDER BY posts.created ";
 
-displayPostsV2( $db, $db2, $sql, $userID, 25, "s", $post_id );
+displayPosts( $db, $db2, $sql, $userID, 25, array( "s", &$post_id ) );
 ?>

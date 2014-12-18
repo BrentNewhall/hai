@@ -230,7 +230,7 @@ function deleteAccount( $db, $user_id )
 		$stmt->close();
 		foreach( $media_ids as $media_id )
 			{
-			$filename = get_db_value( $db, "SELECT filename FROM user_media WHERE id = ?", "s", $media_id );
+			$filename = get_db_value( $db, "SELECT filename FROM user_media WHERE id = ?", array( "s", &$media_id ) );
 			// Delete file
 			unlink( "assets/images/uploads/$filename" );
 			// Delete media record

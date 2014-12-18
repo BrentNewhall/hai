@@ -38,7 +38,7 @@ function printPingForPost( $comment_id, $userID, $ping_time, $is_read, $db )
 
 function printPingForRoom( $room_id, $op_user_id, $ping_time, $is_read, $db, $content_type )
 	{
-	$room_name = get_db_value( $db, "SELECT name FROM rooms WHERE id = ?", "s", $room_id );
+	$room_name = get_db_value( $db, "SELECT name FROM rooms WHERE id = ?", array( "s", &$room_id ) );
 	print( "><div class=\"timestamp\">$ping_time</div>" );
 	print( "You were " );
 	if( $content_type == "ra" )

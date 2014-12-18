@@ -83,11 +83,10 @@ if( isset( $_GET["i"] )  &&  $_GET["i"] != "" )
 			getStuff( $db, "email", $user_id );
 			getStuff( $db, "phone", $user_id );
 			$sql = getStandardSQLselect() . 
-			//$sql = "SELECT DISTINCT posts.id, posts.content, posts.created, users.visible_name, users.real_name, users.username, users.profile_public, posts.author, posts.parent FROM posts " .
 			       "LEFT JOIN broadcasts ON (broadcasts.post = posts.id) " .
 				   "WHERE posts.author = ? " .
 			       "ORDER BY posts.created DESC LIMIT 25";
-			displayPostsV2( $db, $db2, $sql, $userID, 25, "s", $_GET["i"] );
+			displayPosts( $db, $db2, $sql, $userID, 25, array( "s", &$_GET["i"] ) );
 			}
 		}
 	}

@@ -337,10 +337,10 @@ function sendLoadMorePosts( params )
 				var div = document.getElementById("load-more-posts");
 				div.parentNode.removeChild(div);
    				// Update the div with the response
+				// (which will contain another Load More button)
    				var div = document.getElementById("body-container");
 				var contents = div.innerHTML;
    				contents += xmlhttp.responseText;
-				//contents += "<button>Load more posts?</button>";
 				div.innerHTML = contents;
    				}
    			}

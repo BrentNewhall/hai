@@ -5,7 +5,7 @@ require_once( "database.php" );
 require_once( "functions/account.php" );
 require_once( "functions/posts.php" );
 
-$posts_per_page = 25;
+$posts_per_page = 50;
 
 function getStandardSQLselect( $brodcast = "" )
 	{
@@ -122,7 +122,7 @@ function displayComposePane( $flavor, $db, $userID, $post_id = "" )
 					$world_value = "";
 					if( isset( $_GET["i"] )  && $_GET["i"] != "" )
 						{
-						$world_value = get_db_value( $db, "SELECT display_name FROM worlds WHERE id = ?", "s", $_GET["i"] );
+						$world_value = get_db_value( $db, "SELECT display_name FROM worlds WHERE id = ?", array( "s", &$_GET["i"] ) );
 						}
 					?>
 					World: <input type="text" name="post-world" id="post-world" value="<?php echo $world_value; ?>" size="30" title="A topic of conversation" onchange="javascript:displayWorldRestrictions('post-world','post-restrictions','set-post-public');displayWorldSuggestions('post-world','world-hints');" onkeyup="javascript:displayWorldRestrictions('post-world','post-restrictions','set-post-public' );displayWorldSuggestions('post-world','world-hints');" />
@@ -236,7 +236,7 @@ function displayNavbar( $db, $userID )
 	<?php
 	if( $userID != "" )
 		{
-		$unread_pings = get_db_value( $db, "SELECT COUNT(*) FROM pings WHERE user = ? AND is_read = 0", "s", $userID );
+		$unread_pings = get_db_value( $db, "SELECT COUNT(*) FROM pings WHERE user = ? AND is_read = 0", array( "s", &$userID ) );
 		print( "<p><a" );
 		if( $_SERVER["PHP_SELF"] == "/pings.php" )
 			print( " style=\"font-weight: bold\"" );
@@ -514,7 +514,7 @@ function postingIdenticalToLastPost( $db, $content, $table, $user_id )
 	{
 	// Returns 1 if the author's most recent post matches $content
 	require_once( "database.php" );
-	$last_content = get_db_value( $db, "SELECT content FROM $table WHERE author = ? ORDER BY created DESC LIMIT 1", "s", $user_id );
+	$last_content = get_db_value( $db, "SELECT content FROM $table WHERE author = ? ORDER BY created DESC LIMIT 1", array( "s", &$user_id ) );
 	if( $last_content == $content )
 		return 1;
 	return 0;
@@ -528,10 +528,10 @@ function addPings( $db, $content_id, $ping_type, $userID )
 	/* Adds pings for the specified comment */
 	$post_id = $content_id;
 	if( $ping_type == "c" )
-		$post_id = get_db_value( $db, "SELECT post FROM comments WHERE id = ?", "s", $content_id );
+		$post_id = get_db_value( $db, "SELECT post FROM comments WHERE id = ?", array( "s", &$content_id ) );
 	// Find author
 	$users_to_notify = array();
-	$author = get_db_value( $db, "SELECT author FROM posts WHERE id = ?", "s", $post_id );
+	$author = get_db_value( $db, "SELECT author FROM posts WHERE id = ?", array( "s", &$post_id ) );
 	if( $author != $userID )
 		array_push( $users_to_notify, $author );
 	// Find all commenters

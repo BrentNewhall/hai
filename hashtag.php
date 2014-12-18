@@ -67,7 +67,7 @@ $sql = getStandardSQLselect() .
 	   "WHERE posts.content LIKE ? AND posts.public = 1 " .
        "ORDER BY posts.created DESC LIMIT 25";
 
-displayPostsV2( $db, $db2, $sql, $userID, 25, "s", "%#" . $_GET["tag"] . "%" );
+displayPosts( $db, $db2, $sql, $userID, 25, array( "s", "%#" . $_GET["tag"] . "%" ) );
 
 require_once( "footer.php" );
 ?>

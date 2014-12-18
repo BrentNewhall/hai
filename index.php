@@ -6,7 +6,7 @@ if( isset( $_POST["action"] )  &&
     $_POST["action"] == "update-group-membership" )
 	{
 	if( isset( $_POST["user"] )  &&
-	    get_db_value( $db, "SELECT id FROM users WHERE id = ?", "s", $_POST["user"] ) == $_POST["user"] )
+	    get_db_value( $db, "SELECT id FROM users WHERE id = ?", array( "s", & $_POST["user"] ) ) == $_POST["user"] )
 		{
 		$user = $_POST["user"];
 		// Delete existing group memberships for this user.
@@ -30,7 +30,7 @@ if( isset( $_POST["action"] )  &&
 		unset( $team_ids["user"] );
 		foreach( array_keys( $team_ids ) as $team_id )
 			{
-			if( get_db_value( $db, "SELECT id FROM user_teams WHERE id = ?", "s", $team_id ) == $team_id )
+			if( get_db_value( $db, "SELECT id FROM user_teams WHERE id = ?", array( "s", &$team_id ) ) == $team_id )
 				{
 				$stmt = $db->stmt_init();
 				$sql = "INSERT INTO user_team_members (team, user) VALUES (?, ?)";
@@ -99,7 +99,7 @@ elseif( isset( $_POST["compose-post"] ) )
 			$stmt->bind_param( "siss", $userID, time(), $post_content, $_POST["post-id"] );
 			$stmt->execute();
 			$stmt->close();
-			$new_comment_id = get_db_value( $db, "SELECT id FROM comments WHERE author = ? ORDER BY created DESC LIMIT 1", "s", $userID );
+			$new_comment_id = get_db_value( $db, "SELECT id FROM comments WHERE author = ? ORDER BY created DESC LIMIT 1", array( "s", &$userID ) );
 			addPings( $db, $new_comment_id, "c", $userID );
 			}
 		}
@@ -150,7 +150,7 @@ if( $userID != "" )
 		}
 	elseif( isset( $_GET["tab"] ) )
 		{
-		$team_name = get_db_value( $db, "SELECT name FROM user_teams WHERE id = ?", "s", $_GET["tab"] );
+		$team_name = get_db_value( $db, "SELECT name FROM user_teams WHERE id = ?", array( "s", &$_GET["tab"] ) );
 		print( "<h1>$team_name</h1>\n" );
 		$sql = getStandardSQL( "team" );
 		}
@@ -161,11 +161,11 @@ if( $userID != "" )
 		}
 	
 	if( isset( $_GET["tab"] )  &&  $_GET["tab"] == "Everything" )
-		displayPostsV2( $db, $db2, $sql, $userID, 50, "none" );
+		displayPosts( $db, $db2, $sql, $userID, $posts_per_page );
 	elseif( isset( $_GET["tab"] ) )
-		displayPostsV2( $db, $db2, $sql, $userID, 50, "ss", $_GET["tab"], $userID );
+		displayPosts( $db, $db2, $sql, $userID, $posts_per_page, array( "ss", &$_GET["tab"], &$userID ) );
 	else
-		displayPostsV2( $db, $db2, $sql, $userID, 50, "ss", $userID, $userID );
+		displayPosts( $db, $db2, $sql, $userID, $posts_per_page, array( "ss", &$userID, &$userID ) );
 	}
 else
 	{
@@ -179,7 +179,7 @@ else
 	<h2>Recent Posts</h2>
 	<?php
 	$sql = getStandardSQL( "Everything" );
-	displayPostsV2( $db, $db2, $sql, "", 25, "none" );
+	displayPosts( $db, $db2, $sql, "", $posts_per_page );
 	}
 
 require_once( "footer.php" );

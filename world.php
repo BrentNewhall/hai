@@ -8,7 +8,7 @@ $world = "";
 if( isset( $_GET["i"] )  &&  $_GET["i"] != "" )
 	{
 	$world_id = $_GET["i"];
-	$world = get_db_value( $db, "SELECT display_name FROM worlds WHERE id = ?", "s", $world_id );
+	$world = get_db_value( $db, "SELECT display_name FROM worlds WHERE id = ?", array( "s", &$world_id ) );
 	$page_title = "$world - World";
 	}
 else
@@ -19,7 +19,7 @@ else
 if( isset( $_GET["subscribe"] )  &&  $userID != ""  &&  $world_id != "" )
 	{
 	// If the user has not already subscribed to this world,
-	$id = get_db_value( $db, "SELECT id FROM user_worlds WHERE user = ? AND world = ?", "ss", $userID, $world_id );
+	$id = get_db_value( $db, "SELECT id FROM user_worlds WHERE user = ? AND world = ?", array( "ss", &$userID, &$world_id ) );
 	if( $id == "" )
 		{
 		$sql = "INSERT INTO user_worlds (id, user, world) VALUES (UUID(), ?, ?)";
@@ -61,7 +61,7 @@ if( $world == "" )
 
 if( $world != ""  &&  $userID != "" )
 	{
-	$subscribed = get_db_value( $db, "SELECT COUNT(*) FROM user_worlds WHERE user = ? AND world = ?", "ss", $userID, $world_id );
+	$subscribed = get_db_value( $db, "SELECT COUNT(*) FROM user_worlds WHERE user = ? AND world = ?", array( "ss", &$userID, &$world_id ) );
 	if( $subscribed == 1 )
 		print( "<div style=\"float: right\"><input type=\"submit\" name=\"subscribe\" value=\"Subscribed\" disabled /></div>\n" );
 	else
@@ -77,13 +77,13 @@ displayNavbar( $db, $userID );
 if( $world != "" )
 	{
 	displayComposePane( "post", $db, $userID );
-	// Display posts that match that hashtag
+	// Display posts that match that world
 	$sql = getStandardSQLselect() .
 	       "LEFT JOIN broadcasts ON (broadcasts.post = posts.id) " .
 		   "JOIN world_posts ON (world_posts.post = posts.id AND world_posts.world = ?) " .
-	       "ORDER BY posts.created DESC";
+	       "ORDER BY posts.created DESC LIMIT $posts_per_page";
 	
-	displayPostsV2( $db, $db2, $sql, $userID, 25, "s", $world_id );
+	displayPosts( $db, $db2, $sql, $userID, 25, array( "s", &$world_id ) );
 	}
 else
 	{

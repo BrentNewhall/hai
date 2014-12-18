@@ -24,7 +24,7 @@ $display_comment_history = "yes";
 
 function printEdits( $db, $post_id )
 	{
-	$num_edits = get_db_value( $db, "SELECT COUNT(*) FROM post_history WHERE post = ?", "s", $post_id );
+	$num_edits = get_db_value( $db, "SELECT COUNT(*) FROM post_history WHERE post = ?", array( "s", &$post_id ) );
 	if( $num_edits > 0 )
 		{
 		print( "<div id=\"post-history-container\">\n" );
@@ -51,7 +51,7 @@ function printEdits( $db, $post_id )
 function displayPostWithHistory( $db, $db2, $userID, $post_id, $sql )
 	{
 	global $this_page_post_id;
-	$parent_post_id = get_db_value( $db, "SELECT parent FROM posts WHERE id = ?", "s", $post_id );
+	$parent_post_id = get_db_value( $db, "SELECT parent FROM posts WHERE id = ?", array( "s", &$post_id ) );
 	if( $parent_post_id != "" )
 		displayPostWithHistory( $db, $db2, $userID, $parent_post_id, $sql );
 	if( $post_id == $this_page_post_id )
@@ -60,7 +60,7 @@ function displayPostWithHistory( $db, $db2, $userID, $post_id, $sql )
 		printEdits( $db, $post_id );
 		print( "<div style=\"border-left: 5px solid black\">\n" );
 		}
-	displayPostsV2( $db, $db2, $sql, $userID, 25, "s", $post_id );
+	displayPosts( $db, $db2, $sql, $userID, $posts_per_page, array( "s", &$post_id ) );
 	if( $post_id == $this_page_post_id )
 		print( "</div>\n" );
 	}
@@ -79,14 +79,14 @@ function displayPostChildren( $db, $db2, $userID, $parent_post_id, $sql )
 		}
 	$stmt->close();
 	foreach( $child_post_ids as $post_id )
-		displayPostsV2( $db, $db2, $sql, $userID, 25, "s", $post_id );
+		displayPosts( $db, $db2, $sql, $userID, $posts_per_page, array( "s", &$post_id ) );
 	}
 
 if( $userID != "" )
 	displayNavbar( $db, $userID );
 
-$public = get_db_value( $db, "SELECT public FROM posts WHERE id = ?", "s", $post_id );
-$author = get_db_value( $db, "SELECT author FROM posts WHERE id = ?", "s", $post_id );
+$public = get_db_value( $db, "SELECT public FROM posts WHERE id = ?", array( "s", &$post_id ) );
+$author = get_db_value( $db, "SELECT author FROM posts WHERE id = ?", array( "s", &$post_id ) );
 
 if( $public  ||  $author == $userID )
 	{
