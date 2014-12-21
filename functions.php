@@ -110,7 +110,7 @@ function displayComposePane( $flavor, $db, $userID, $post_id = "" )
 	<div style="display: table">
 		<div style="display: table-row">
 			<div style="display: table-cell; width: <?php echo $button_area_width; ?>px; height: <?php echo $collapsed_height; ?>px; text-align: center; vertical-align: middle;" id="<?php echo $tools_id; ?>">
-				<button onclick="javascript:toggleComposePane('<?php echo $tools_id; ?>','<?php echo $compose_pane_id; ?>','<?php echo $compose_id; ?>'); return false;"><?php echo $write_button_label; ?></button>
+				<button class="reply-button" onclick="javascript:toggleComposePane('<?php echo $tools_id; ?>','<?php echo $compose_pane_id; ?>','<?php echo $compose_id; ?>'); return false;"><?php echo $write_button_label; ?></button>
 			</div>
 			<div style="width: <?php echo $width; ?>px; background-color: white; display: none" id="<?php echo $compose_pane_id; ?>">
 				<textarea class="<?php echo $compose_class; ?>" name="compose-post" id="<?php echo $compose_id; ?>" onkeyup="javascript:updatePreview('<?php echo $compose_id; ?>','<?php echo $preview_id; ?>');" /></textarea><br />

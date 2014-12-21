@@ -148,7 +148,7 @@ h2	{
 	float: right;
 	color: #aaaaaa;
 	text-decoration: none;
-	font-size: 10pt;
+	font-size: 85%;
 	padding-left: 5px;
 	padding-bottom: 5px;
 	}
@@ -224,7 +224,7 @@ div.comment-author	{
 	z-index: 100;
 	}
 .author-details	{
-	font-size: 9pt;
+	font-size: 85%;
 	background-color: #eeeeee;
 	width: 150px;
 	}
