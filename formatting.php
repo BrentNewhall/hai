@@ -14,7 +14,7 @@ displayNavbar( $db, $userID );
 	</tr>
 	<tr>
 		<td class="label">Italics</td>
-		<td>Books like ''Dune'', *Starship Troopers*, _Foundation_, the [i]The Martian Chronicles[/i], &lt;i&gt;Ringworld&lt;/i&gt;, and &lt;em&gt;Ender's Game&lt;/em&gt;.</td>
+		<td>Books like ''Dune'', *Starship Troopers*, _Foundation_, [i]The Martian Chronicles[/i], &lt;i&gt;Ringworld&lt;/i&gt;, and &lt;em&gt;Ender's Game&lt;/em&gt;.</td>
 		<td>Books like <em>Dune</em>, <em>Starship Troopers</em>, <em>Foundation</em>, <em>The Martian Chronicles</em>, <em>Ringworld</em>, and <em>Ender's Game</em>.</td>
 	</tr>
 	<tr>
@@ -159,7 +159,7 @@ displayNavbar( $db, $userID );
 	</tr>
 </table>
 
-<p>All HTML and bracketed BBcode (like [CODE]) can be upper-case or lower-case.</p>
+<p>All HTML (like &lt;strong&gt;) and bracketed BBcode (like [CODE]) can be upper-case or lower-case.</p>
 
 <?php
 require_once( "footer.php" );

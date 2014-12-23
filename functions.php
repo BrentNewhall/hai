@@ -28,8 +28,10 @@ function getStandardSQL( $type )
 		// Filter out blocks
 		return getStandardSQLselect() . 
 			   "LEFT JOIN broadcasts ON (broadcasts.post = posts.id) " .
-		       "WHERE posts.public = 1 " .
+			   "LEFT JOIN waves ON waves.post = posts.id AND waves.recipient = ? " .
+		       "WHERE (posts.public = 1 OR waves.post IS NOT NULL) " .
 			   "AND posts.id NOT IN (SELECT post FROM room_posts) " .
+			   "AND posts.author NOT IN (SELECT troll FROM blocks WHERE blocker = ?) " .
 		       "ORDER BY bothcreated DESC LIMIT $posts_per_page";
 	elseif( $type == "team" )
 		return getStandardSQLselect() .
@@ -38,6 +40,7 @@ function getStandardSQL( $type )
 		       "LEFT JOIN posts parent_posts on (parent_posts.id = posts.parent) " .
 			   "LEFT JOIN broadcasts ON (broadcasts.post = posts.id AND broadcasts.user = utm.user) " .
 			   "WHERE posts.id NOT IN (SELECT post FROM room_posts) " .
+			   "AND posts.author NOT IN (SELECT troll FROM blocks WHERE blocker = ut.user) " .
 		       "ORDER BY bothcreated DESC LIMIT $posts_per_page";
 	elseif( $type == "all" )
 		return getStandardSQLselect() .
@@ -47,15 +50,17 @@ function getStandardSQL( $type )
 			   "LEFT JOIN broadcasts ON (broadcasts.post = posts.id AND broadcasts.user = user_team_members.user) " .
 		       "WHERE ( posts.author = ? OR user_team_members.user = posts.author ) " .
 			   "AND posts.id NOT IN (SELECT post FROM room_posts) " .
+			   "AND posts.author NOT IN (SELECT troll FROM blocks WHERE blocker = ?) " .
 		       "ORDER BY bothcreated DESC LIMIT $posts_per_page";
 	return "";
 	}
 
-function displayComposePane( $flavor, $db, $userID, $post_id = "" )
+function displayComposePane( $flavor, $db, $userID, $post_id = "", $recipient_id = "" )
 	{
 	// Display form and table for composing a message.
 	// $flavor = "post" or "comment"
 	// $post_id = ID of parent post, if composing a comment
+	// $recipient_id = ID of user receiving the private message
 	$button_area_width = 175;
 	$width = 500;
 	$height = 350;
@@ -91,21 +96,25 @@ function displayComposePane( $flavor, $db, $userID, $post_id = "" )
 		$compose_class = "compose-room";
 		$preview_class = "preview-room";
 		}
+	elseif( $recipient_id != "" )
+		{
+		$compose_class = "compose-wave";
+		$preview_class = "wave-preview";
+		}
 	if( $flavor == "room" )
 		print( "<form action=\"room.php\" method=\"post\">\n" );
+	elseif( $recipient_id != "" )
+		print( "<form action=\"waves.php\" method=\"post\">\n" );
 	else
 		print( "<form action=\"index.php\" method=\"post\">\n" );
 	
-	/* if( isset( $_GET["tab"] ) )
-		print( "<input type=\"hidden\" name=\"redirect\" value=\"" . $_SERVER["PHP_SELF"] . "?tab=" . $_GET["tab"] . "\" />\n" );
-	elseif( isset( $_GET["i"] ) )
-		print( "<input type=\"hidden\" name=\"redirect\" value=\"" . $_SERVER["PHP_SELF"] . "?i=" . $_GET["i"] . "\" />\n" );
-	else */
 	print( "<input type=\"hidden\" name=\"redirect\" value=\"" . getRedirectURL() . "\" />\n" );
 	if( $flavor == "comment" )
 		print( "<input type='hidden' name='post-id' value='$post_id' />\n" );
 	if( $flavor == "room" )
 		print( "<input type='hidden' name='room-id' value='$post_id' />\n" );
+	if( $recipient_id != "" )
+		print( "<input type='hidden' name='recipient' value='$recipient_id' />\n" );
 	?>
 	<div style="display: table">
 		<div style="display: table-row">
@@ -124,9 +133,25 @@ function displayComposePane( $flavor, $db, $userID, $post_id = "" )
 						{
 						$world_value = get_db_value( $db, "SELECT display_name FROM worlds WHERE id = ?", array( "s", &$_GET["i"] ) );
 						}
+					if( $recipient_id != "" )
+						{
+						$stmt = $db->stmt_init();
+						$stmt->prepare( "SELECT visible_name, real_name, profile_public FROM users WHERE id = ?" );
+						$stmt->bind_param( "s", $recipient_id );
+						$stmt->execute();
+						$stmt->bind_result( $visible_name, $real_name, $profile_public );
+						$stmt->fetch();
+						$stmt->close();
+						print( "<span id=\"recipient-box\">Wave to " .  getAuthorLink( $recipient_id, $visible_name, $real_name, $profile_public ) . "</span>\n" );
+						}
+					else
+						{
+						?>
+						World: <input type="text" name="post-world" id="post-world" value="<?php echo $world_value; ?>" size="30" title="A topic of conversation" onchange="javascript:displayWorldRestrictions('post-world','post-restrictions','set-post-public');displayWorldSuggestions('post-world','world-hints');" onkeyup="javascript:displayWorldRestrictions('post-world','post-restrictions','set-post-public' );displayWorldSuggestions('post-world','world-hints');" />
+						<input type="checkbox" name="public" id="set-post-public" checked="yes" value="yes" onchange="javascript:displayWorldRestrictions('post-world','post-restrictions','set-post-public' );" /> <label for="set-post-public" class="compose-checkbox" title="Public posts show up in both the world and your general feed. If unchecked, the post only shows up in the world.">Public</label>
+						<?php
+						} // end if wave
 					?>
-					World: <input type="text" name="post-world" id="post-world" value="<?php echo $world_value; ?>" size="30" title="A topic of conversation" onchange="javascript:displayWorldRestrictions('post-world','post-restrictions','set-post-public');displayWorldSuggestions('post-world','world-hints');" onkeyup="javascript:displayWorldRestrictions('post-world','post-restrictions','set-post-public' );displayWorldSuggestions('post-world','world-hints');" />
-					<input type="checkbox" name="public" id="set-post-public" checked="yes" value="yes" onchange="javascript:displayWorldRestrictions('post-world','post-restrictions','set-post-public' );" /> <label for="set-post-public" class="compose-checkbox" title="Public posts show up in both the world and your general feed. If unchecked, the post only shows up in the world.">Public</label>
 					<input type="checkbox" name="allow-comments" id="set-post-allow-comments" checked="yes" value="yes" /> <label for="set-post-allow-comments" class="compose-checkbox" title="If checked, anyone who can see this post can comment on it.">Comments</label>
 					<input type="checkbox" name="editable" id="set-post-editable" value="yes" /> <label for="set-post-editable" class="compose-checkbox" title="If checked, anyone logged in to Hai who can see this post can edit it.">Editable</label><br />
 					<div id="world-hints"></div>
@@ -137,7 +162,9 @@ function displayComposePane( $flavor, $db, $userID, $post_id = "" )
 				<div class="reply-suggestions" id="<?php echo $preview_id; ?>-reply-suggestions"></div>
 				<div class="<?php echo $preview_class; ?>" id="<?php echo $preview_id; ?>"></div>
 				<div id="post-restrictions" class="post-restrictions"><?php
-				if( $world_value == "" )
+				if( $recipient_id != "" )
+					print( "" );
+				elseif( $world_value == "" )
 					print( "This post will appear in the \"Everything\" stream, and in the streams of anyone who's added you to a Team." );
 				else
 					print( "This post will appear in the \"$world_value\" World." );
@@ -236,19 +263,21 @@ function displayNavbar( $db, $userID )
 	<?php
 	if( $userID != "" )
 		{
+		// Pings
 		$unread_pings = get_db_value( $db, "SELECT COUNT(*) FROM pings WHERE user = ? AND is_read = 0", array( "s", &$userID ) );
 		print( "<p><a" );
 		if( $_SERVER["PHP_SELF"] == "/pings.php" )
 			print( " style=\"font-weight: bold\"" );
-		print( " title=\"Notifications of new comments on posts you wrote or commented on.\" href=\"pings.php\">Pings" );
+		print( " title=\"Notifications of new comments on posts you wrote or commented on.\" href=\"/pings.php\">Pings" );
 		if( $unread_pings > 0 )
 			print( " <strong>($unread_pings)</strong>" );
 		print( "</a></p>\n" );
+		// Waves
+		print( "<p" );
+		if( $_SERVER["PHP_SELF"] == "/waves.php" )
+			print(" style=\"font-weight: bold\"" );
+		print( "><a href=\"/waves.php\" title=\"Posts sent to you privately.\">Waves</a></p>\n" );
 		}
-	print( "<p" );
-	if( isset( $_GET["tab"] )  &&  $_GET["tab"] == "Everything" )
-		print( " style=\"font-weight: bold\"" );
-	print( " title=\"All posts marked public, from everyone. Kinda like Twitter!\"><a href=\"index.php?tab=Everything\">Everything</a></p>\n" );
 	if( $userID != "" )
 		{
 		// Teams
@@ -256,7 +285,7 @@ function displayNavbar( $db, $userID )
 		print( "<p" );
 		if( $page_title == "Home"  &&  ! isset( $_GET["tab"] ) )
 			print( " style=\"font-weight: bold\"" );
-		print( " title=\"Posts from anyone in any of your teams.\" class=\"view-content\"><a href=\"index.php\">All</a></p>\n" );
+		print( " title=\"Posts from anyone in any of your teams.\" class=\"view-content\"><a href=\"/index.php\">All</a></p>\n" );
 		$stmt = $db->stmt_init();
 		$sql = "SELECT id, name FROM user_teams WHERE user = ? ORDER BY name";
 		$stmt->prepare( $sql );
@@ -269,7 +298,7 @@ function displayNavbar( $db, $userID )
 			if( $page_title == "Home"  &&
 		    	isset( $_GET["tab"] )  &&  $_GET["tab"] == $team_id )
 				print( " style=\"font-weight: bold\"" );
-			print( "><a title=\"Posts from anyone in your '$team_name' team.\" href=\"index.php?tab=$team_id\">$team_name</a>" );
+			print( "><a title=\"Posts from anyone in your '$team_name' team.\" href=\"/index.php?tab=$team_id\">$team_name</a>" );
 			print( "</p>\n" );
 			}
 		}
@@ -297,7 +326,6 @@ function displayNavbar( $db, $userID )
 		    ( isset( $_GET["i"] )  &&  $_GET["i"] == $world_id ) )
 			print( " style=\"font-weight: bold\"" );
 		print( "><a title=\"Posts in the '$world_name' world.\" href=\"/world/$basic_name\">$world_short_name</a>" );
-		//print( "><a title=\"Posts in the '$world_name' world.\" href=\"/room.php?i=$world_id\">$world_short_name</a>" );
 		print( "</p>\n" );
 		}
 	// Rooms
@@ -325,7 +353,6 @@ function displayNavbar( $db, $userID )
 		      ( isset( $_POST["room-id"] )  &&  $_POST["room-id"] == $room_id )  ) )
 			print( " style=\"font-weight: bold\"" );
 		print( "><a title=\"Posts in the '$room_name' room.\" href=\"/room/$room_name\">$room_short_name</a>" );
-		//print( "><a title=\"Posts in the '$room_name' room.\" href=\"/room.php?i=$room_id\">$room_short_name</a>" );
 		print( "</p>\n" );
 		}
 	// Hashtags
@@ -333,6 +360,11 @@ function displayNavbar( $db, $userID )
 	if( $_SERVER["PHP_SELF"] == "/hashtag.php" )
 		print( " style=\"font-weight: bold\"" );
 	print( "href=\"hashtag.php\">Hashtags</a></p>\n" );
+	// Everything
+	print( "<p" );
+	if( isset( $_GET["tab"] )  &&  $_GET["tab"] == "Everything" )
+		print( " style=\"font-weight: bold\"" );
+	print( " title=\"All posts marked public, from everyone. Kinda like Twitter!\"><a href=\"index.php?tab=Everything\">Everything</a></p>\n" );
 	// Search
 	print( "<form action=\"search.php\" method=\"get\"><input type=\"text\" size=\"8\" name=\"q\" value=\"" );
 	if( $_SERVER["PHP_SELF"] == "/search.php"  &&  isset( $_GET["q"] ) )
@@ -444,7 +476,7 @@ function printAuthorInfo( $db, $userID, $author_id, $author_username, $author_vi
 		if( $group_names != "" )
 			print( "Member of <strong>$group_names</strong><br />" );
 		print( "<div id=\"update-group-membership-$post_id\" class=\"update-group-membership\" style=\"display: none\">$all_groups</div>\n" );
-		print( "<a href=\"#\" onmouseover=\"javascript:document.getElementById('update-group-membership-$post_id').style.display='block';return false;\" onmmouseleave=\"javascript:document.getElementById('update-group-membership-$post_id').style.display='none';return false;\">Teams</a> &nbsp; <a href=\"#\" onclick=\"javascript:displayBlock('$author_visible_name','$author_id');return false;\">Block</a></div> <!-- #author-details -->\n" );
+		print( "<a href=\"#\" onmouseover=\"javascript:document.getElementById('update-group-membership-$post_id').style.display='block';return false;\" onmmouseleave=\"javascript:document.getElementById('update-group-membership-$post_id').style.display='none';return false;\">Teams</a> &nbsp; <a href=\"waves.php?i=$author_id\" title=\"Send a private message to this person\">Wave</a> &nbsp; <a href=\"#\" onclick=\"javascript:displayBlock('$author_visible_name','$author_id');return false;\" title=\"Block this person\">Block</a></div> <!-- #author-details -->\n" );
 		}
 	print(  "</div> <!-- .$author_class -->\n" );
 	}

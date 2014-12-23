@@ -29,7 +29,8 @@ print( "<div style=\"position: fixed; bottom: 5px; right: 5px; color: white; fon
 </div>
 
 <div id="header">
-<a href="about.php">About</a> &nbsp;
+<a href="/about.php">About</a> &nbsp;
+<a href="/help.php">Help</a> &nbsp;
 </div>
 
 <?php

@@ -6,8 +6,6 @@ require_once( "functions.php" );
 $page_title = "Pings";
 require_once( "header.php" );
 
-requireLogin( $db, $db2 );
-
 displayNavbar( $db, $userID );
 
 print( "<div id=\"display-pinged-post\"></div>\n" );
@@ -62,7 +60,7 @@ function printPingForMention( $post_id, $user_id, $ping_time, $is_read, $db, $co
 	$stmt->bind_result( $post_id, $post_content, $author_id, $author_visible_name, $author_real_name, $author_profile_public );
 	$stmt->fetch();
 	$stmt->close();
-	print( " onmouseover=\"javascript:getPostForComment('$post_id','$userID','display-pinged-post');\"" );
+	print( " onmouseover=\"javascript:getPostForComment('$post_id','$user_id','display-pinged-post');\"" );
 	print( " onmouseleave=\"javascript:document.getElementById('display-pinged-post').innerHTML='';\"" );
 	print( "><div class=\"timestamp\">$ping_time</div>" );
 	print( "You were mentioned in " );
@@ -98,9 +96,11 @@ if( $stmt->prepare( $sql ) )
 			printPingForRoom( $post_id, $userID, $ping_time, $is_read, $db, $content_type );
 			}
 		elseif( $content_type == "m" )
-			{
+			// Name mentioned
 			printPingForMention( $post_id, $userID, $ping_time, $is_read, $db, $content_type );
-			}
+		elseif( $content_type == "w" )
+			// Wave
+			printPingForMention( $post_id, $userID, $ping_time, $is_read, $db, $content_type );
 		print( "</div>\n" );
 		}
 	$stmt->close();

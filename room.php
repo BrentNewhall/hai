@@ -51,7 +51,6 @@ if( ( isset( $_GET["join"] )  ||  isset( $_POST["join"] ) )  &&
 			{
 			// Print password field
 			require_once( "header.php" );
-			requireLogin( $db, $db2 );
 			displayNavbar( $db, $userID );
 			print( "<h1>Enter password</h1>\n" .
 			       "<form action=\"room.php\" method=\"post\">\n" .
@@ -88,8 +87,8 @@ if( isset( $_POST['compose-post'] ) )
 		// The post's public flag inherits its value from the room.
 		$room_is_public = get_db_value( $db, "SELECT public FROM rooms WHERE id = ?", array( "s", &$room_id ) );
 		$sql = "INSERT INTO posts (id, author, created, content, " .
-		                          "parent, public) " .
-								  "VALUES (UUID(), ?, ?, ?, '', ?)";
+		                          "parent, public, comments) " .
+								  "VALUES (UUID(), ?, ?, ?, '', ?, 1)";
 		$stmt = $db->stmt_init();
 		$stmt->prepare( $sql );
 		$stmt->bind_param( "sisi", $userID, time(), $_POST["compose-post"], $room_is_public );

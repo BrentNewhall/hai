@@ -51,6 +51,7 @@ function printEdits( $db, $post_id )
 function displayPostWithHistory( $db, $db2, $userID, $post_id, $sql )
 	{
 	global $this_page_post_id;
+	global $posts_per_page;
 	$parent_post_id = get_db_value( $db, "SELECT parent FROM posts WHERE id = ?", array( "s", &$post_id ) );
 	if( $parent_post_id != "" )
 		displayPostWithHistory( $db, $db2, $userID, $parent_post_id, $sql );
@@ -67,6 +68,7 @@ function displayPostWithHistory( $db, $db2, $userID, $post_id, $sql )
 
 function displayPostChildren( $db, $db2, $userID, $parent_post_id, $sql )
 	{
+	global $posts_per_page;
 	$child_post_ids = array();
 	$stmt = $db->stmt_init();
 	$stmt->prepare( "SELECT id FROM posts WHERE parent = ? ORDER BY created" );
@@ -87,8 +89,9 @@ if( $userID != "" )
 
 $public = get_db_value( $db, "SELECT public FROM posts WHERE id = ?", array( "s", &$post_id ) );
 $author = get_db_value( $db, "SELECT author FROM posts WHERE id = ?", array( "s", &$post_id ) );
+$waves = intval( get_db_value( $db, "SELECT COUNT(*) FROM waves WHERE post = ?", array( "s", &$post_id ) ) );
 
-if( $public  ||  $author == $userID )
+if( $public  ||  $author == $userID  ||  $waves > 0 )
 	{
 	$sql = getStandardSQLselect() . " LEFT JOIN broadcasts ON (broadcasts.id = posts.id) WHERE posts.id = ? ORDER BY bothcreated DESC";
 	displayPostWithHistory( $db, $db2, $userID, $post_id, $sql );

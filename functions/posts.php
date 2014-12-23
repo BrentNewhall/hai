@@ -7,13 +7,6 @@ function displayPosts( $db, $db2, $sql, $userID, $max_posts, $params = NULL )
 	$total_count_sql = "SELECT COUNT(*)" . $total_count_sql;
 	//print( "SQL: $sql<br>\n$total_count_sql<br>" );
 	//print "$param_types $param1 $param2<br>" ;
-	/* 
-	if( $param3 != "" )
-		$total_count = get_db_value( $db, $total_count_sql, array( $param_types, &$param1, &$param2, &$param3 ) );
-	elseif( $param2 != "" )
-		$total_count = get_db_value( $db, $total_count_sql, array( $param_types, &$param1, &$param2 ) );
-	elseif( $param1 != "" )
-		$total_count = get_db_value( $db, $total_count_sql, array( $param_types, &$param1 ) ); */
 	if( ! is_null( $params ) )
 		$total_count = get_db_value( $db, $total_count_sql, $params );
 	else
@@ -121,10 +114,11 @@ function displayPost( $db, $db2, $post_id, $userID )
 	              "users.username, users.profile_public, " .
 	              "posts.author, posts.parent, posts.editable, " .
 				  "posts.comments, posts.public, " .
-	              "broadcasts.id " .
+	              "broadcasts.id, waves.post " .
 	       "FROM posts " .
 	       "JOIN users ON (posts.author = users.id) " .
 	       "LEFT JOIN broadcasts ON (broadcasts.post = posts.id) " .
+		   "LEFT JOIN waves ON (waves.post = posts.id) " .
 	       "WHERE posts.id = ?";
 	if( $stmt->prepare( $sql ) )
 		{
@@ -133,7 +127,7 @@ function displayPost( $db, $db2, $post_id, $userID )
 		print $db->error;
 		print $stmt->error;
 		$stmt->store_result();
-		$stmt->bind_result( $content, $created, $author_visible_name, $author_real_name, $author_username, $author_public, $author_id, $parent_post_id, $editable, $comments, $post_public, $broadcast_id );
+		$stmt->bind_result( $content, $created, $author_visible_name, $author_real_name, $author_username, $author_public, $author_id, $parent_post_id, $editable, $comments, $post_public, $broadcast_id, $wave );
 		$post_index = 0;
 		$stmt->fetch();
 		$stmt->close();
@@ -182,6 +176,8 @@ function displayPost( $db, $db2, $post_id, $userID )
 			}
 		if( $world_name != "" )
 			print( "<div class=\"in-world\">In the world of <a href=\"world.php?i=$world_id\" class=\"world-name\">$world_name</a>:</div>\n" );
+		if( $wave != "" )
+			print( "<div class=\"wave-header\">Wave:</div>\n" );
 		if( $broadcast_id != "" )
 			{
 			$u_stmt = $db->prepare( "SELECT broadcasts.created, users.id, users.real_name, users.visible_name, users.profile_public FROM broadcasts JOIN users ON (broadcasts.user = users.id) WHERE broadcasts.id = ?" );

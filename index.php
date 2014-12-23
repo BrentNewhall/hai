@@ -135,8 +135,6 @@ elseif( isset( $_POST["compose-post"] ) )
 $page_title = "Home";
 require_once( "header.php" );
 
-//requireLogin( $db, $db2 );
-
 displayNavbar( $db, $userID );
 
 if( $userID != "" )
@@ -147,31 +145,27 @@ if( $userID != "" )
 		{
 		print( "<h1>Everything</h1>\n" );
 		$sql = getStandardSQL( "Everything User" );
+		displayPosts( $db, $db2, $sql, $userID, $posts_per_page, array( "ss", &$userID, &$userID ) );
 		}
 	elseif( isset( $_GET["tab"] ) )
 		{
 		$team_name = get_db_value( $db, "SELECT name FROM user_teams WHERE id = ?", array( "s", &$_GET["tab"] ) );
 		print( "<h1>$team_name</h1>\n" );
 		$sql = getStandardSQL( "team" );
+		displayPosts( $db, $db2, $sql, $userID, $posts_per_page, array( "ss", &$_GET["tab"], &$userID ) );
 		}
 	else
 		{
 		print( "<h1>All</h1>\n" );
 		$sql = getStandardSQL( "all" );
+		displayPosts( $db, $db2, $sql, $userID, $posts_per_page, array( "sss", &$userID, &$userID, &$userID ) );
 		}
-	
-	if( isset( $_GET["tab"] )  &&  $_GET["tab"] == "Everything" )
-		displayPosts( $db, $db2, $sql, $userID, $posts_per_page );
-	elseif( isset( $_GET["tab"] ) )
-		displayPosts( $db, $db2, $sql, $userID, $posts_per_page, array( "ss", &$_GET["tab"], &$userID ) );
-	else
-		displayPosts( $db, $db2, $sql, $userID, $posts_per_page, array( "ss", &$userID, &$userID ) );
 	}
 else
 	{
 	?>
 	<p>Welcome to Hai, an experimental social platform.</p>
-	<p>Hai is divided into Worlds and Rooms. Each <strong><a href="world.php">World</a></strong> focuses on one topic, while <strong><a href="room.php">Rooms</a></strong> are named areas of conversation. Worlds are like magazines (always on topic), while Rooms are like forums (themed but not always on topic).</p>
+	<p>Hai is divided into Worlds and Rooms. Each <strong><a href="world.php">World</a></strong> focuses on one topic, while <strong><a href="room.php">Rooms</a></strong> are named areas of conversation. Worlds are like magazines (every article is related to one topic), while Rooms are like web forums or chat rooms (themed but not always on topic).</p>
 	<p>You can also browse <a href="hashtag.php"><strong>Hashtags</strong></a> across Hai.</p>
 	<p>Until you log in, you can only see content that has been marked public.</p>
 	<p>When you're logged in, you can assign other users to Teams based on their interests and see what they've posted.</p>

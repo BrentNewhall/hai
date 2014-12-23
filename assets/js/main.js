@@ -531,54 +531,6 @@ function passwordHint( source_div, target_div )
 	div.innerHTML = output + ".";
 	}
 
-// -----------
-// FILE UPLOAD
-// -----------
-
-// initialize
-function InitFileDrag( drag_target, user_id )
-	{
-	if (window.File && window.FileList && window.FileReader)
-		{
-		var filedrag = document.getElementById(drag_target);
-		// is XHR2 available?
-		var xhr = new XMLHttpRequest();
-		if (xhr.upload)
-			{
-			// file drop
-			filedrag.target_div = drag_target;
-			filedrag.user_id    = user_id;
-			filedrag.addEventListener("dragover", FileDragHover, false);
-			filedrag.addEventListener("dragleave", FileDragHover, false);
-			filedrag.addEventListener("drop", FileSelectHandler, false);
-			//filedrag.style.display = "block";
-			}
-		}
-	}
-
-// file drag hover
-function FileDragHover(e)
-	{
-	e.stopPropagation();
-	e.preventDefault();
-	//e.target.className += (e.type == "dragover" ? "hover" : "");
-	}
-
-// file selection
-function FileSelectHandler(e)
-	{
-	// cancel event and hover styling
-	FileDragHover(e);
-	// fetch FileList object
-	var files = e.target.files || e.dataTransfer.files;
-	// process all File objects
-	for (var i = 0, f; f = files[i]; i++)
-		{
-		ParseFile( f );
-		UploadFile( f, e.target.target_div, e.target.user_id );
-		}
-	}
-
 function displayWorldRestrictions( source_div, restrictions_div, public_checkbox )
 	{
 	var text = document.getElementById( source_div ).value;

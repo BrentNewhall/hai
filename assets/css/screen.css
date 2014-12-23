@@ -190,6 +190,12 @@ div.comment-author	{
 	font-family: 'Oxygen', sans-serif;
 	font-size: 10pt;
 	}
+.compose-wave	{
+	width: 510px;
+	height: 100px;
+	font-family: 'Oxygen', sans-serif;
+	font-size: 10pt;
+	}
 .post-preview	{
 	position: relative;
 	top: 0px;
@@ -207,6 +213,17 @@ div.comment-author	{
 	left: 0px;
 	width: 400px;
 	min-height: 50px;
+	border: 1px solid #666666;
+	padding: 5px;
+	background-color: white;
+	z-index: 100;
+	}
+.wave-preview	{
+	position: relative;
+	top: 0px;
+	left: 0px;
+	width: 500px;
+	min-height: 75px;
 	border: 1px solid #666666;
 	padding: 5px;
 	background-color: white;
@@ -235,7 +252,6 @@ div.comment-author	{
 	}
 .comment	{
 	color: #666666;
-	ddisplay: table-row;
 	position: relative;
 	}
 .comment-content	{
@@ -291,6 +307,10 @@ div.comment-author	{
 	font-size: 9pt;
 	color: #888888;
 	}
+.wave-header	{
+	font-size: 9pt;
+	color: #888888;
+	}
 .world-name	{
 	font-weight: bold;
 	}
@@ -300,9 +320,6 @@ div.comment-author	{
 	}
 #dialog-box	{
 	background-color: white;
-	/* position: fixed;
-	left: 500px;
-	top: 200px; */
 	position: fixed;
 	top: 40%;
 	left: 50%;
@@ -389,8 +406,6 @@ div.comment-author	{
 	}
 #post-history	{
 	position: absolute;
-	/* top: 45px;
-	right: -145px; */
 	left: 710px;
 	width: 500px;
 	border: 1px solid #dddddd;
@@ -407,4 +422,7 @@ div.comment-author	{
 	}
 .history-info	{
 	color: #888888;
+	}
+#recipient-box	{
+	margin-right: 20px;
 	}

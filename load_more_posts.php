@@ -70,7 +70,12 @@ else
 	if( $tab == "Everything" )
 		{
 		$sql = fixSQL( getStandardSQL( "Everything" ), $start_index, $posts_per_page );
-		displayPosts( $db, $db2, $sql, $userID, $posts_per_page );
+		displayPosts( $db, $db2, $sql, $userID, $posts_per_page, array( "s", &$userID ) );
+		}
+	elseif( $tab == "Everything User" )
+		{
+		$sql = fixSQL( getStandardSQL( "Everything User" ), $start_index, $posts_per_page );
+		displayPosts( $db, $db2, $sql, $userID, $posts_per_page, array( "ss", &$userID, &$userID ) );
 		}
 	elseif( $tab != "" )
 		{
@@ -80,7 +85,7 @@ else
 	else
 		{
 		$sql = fixSQL( getStandardSQL( "all" ), $start_index, $posts_per_page );
-		displayPosts( $db, $db2, $sql, $userID, $posts_per_page, array( "ss", &$userID, &$userID ) );
+		displayPosts( $db, $db2, $sql, $userID, $posts_per_page, array( "sss", &$userID, &$userID, &$userID ) );
 		}
 	}
 ?>
