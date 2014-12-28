@@ -432,7 +432,7 @@ if( $room_name != "" )
 	$sql = getStandardSQLselect() .
 		   "JOIN room_posts ON (room_posts.post = posts.id AND room_posts.room = ?) " .
 		   "LEFT JOIN broadcasts ON (broadcasts.id = posts.id) " .
-	       "ORDER BY posts.created DESC";
+	       "ORDER BY room_posts.sticky DESC, posts.created DESC";
 	displayPosts( $db, $db2, $sql, $userID, 25, array( "s", &$room_id ) );
 	displayOpInterface( $db, $userID, $room_id );
 	// Create an empty style element just to auto-expand the compose window.

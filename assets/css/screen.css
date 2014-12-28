@@ -139,6 +139,11 @@ h2	{
 	padding: 4px 0px 4px 0px;
 	font-size: 10pt;
 	}
+.sticky-icon	{
+	float: right;
+	padding-left: 5px;
+	padding-bottom: 5px;
+	}
 .edit-icon	{
 	float: right;
 	padding-left: 5px;
@@ -155,6 +160,12 @@ h2	{
 .timestamp a	{
 	color: #aaaaaa;
 	text-decoration: none;
+	}
+.reply-button	{
+	padding-right: 10px;
+	}
+.discard-button	{
+	padding-right: 10px;
 	}
 div.author	{
 	width: 175px;
@@ -202,7 +213,7 @@ div.comment-author	{
 	left: 0px;
 	width: 500px;
 	min-height: 125px;
-	border: 1px solid #666666;
+	border: 1px solid #aaaaaa;
 	padding: 5px;
 	background-color: white;
 	z-index: 100;
@@ -213,7 +224,7 @@ div.comment-author	{
 	left: 0px;
 	width: 400px;
 	min-height: 50px;
-	border: 1px solid #666666;
+	border: 1px solid #aaaaaa;
 	padding: 5px;
 	background-color: white;
 	z-index: 100;

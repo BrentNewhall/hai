@@ -139,11 +139,11 @@ displayNavbar( $db, $userID );
 
 if( $userID != "" )
 	{
-	displayComposePane( "post", $db, $userID );
 	
 	if( isset( $_GET["tab"] )  &&  $_GET["tab"] == "Everything" )
 		{
 		print( "<h1>Everything</h1>\n" );
+		displayComposePane( "post", $db, $userID );
 		$sql = getStandardSQL( "Everything User" );
 		displayPosts( $db, $db2, $sql, $userID, $posts_per_page, array( "ss", &$userID, &$userID ) );
 		}
@@ -151,6 +151,7 @@ if( $userID != "" )
 		{
 		$team_name = get_db_value( $db, "SELECT name FROM user_teams WHERE id = ?", array( "s", &$_GET["tab"] ) );
 		print( "<h1>$team_name</h1>\n" );
+		displayComposePane( "post", $db, $userID );
 		$sql = getStandardSQL( "team" );
 		displayPosts( $db, $db2, $sql, $userID, $posts_per_page, array( "ss", &$_GET["tab"], &$userID ) );
 		}
@@ -158,6 +159,7 @@ if( $userID != "" )
 		{
 		print( "<h1>All</h1>\n" );
 		$sql = getStandardSQL( "all" );
+		displayComposePane( "post", $db, $userID );
 		displayPosts( $db, $db2, $sql, $userID, $posts_per_page, array( "sss", &$userID, &$userID, &$userID ) );
 		}
 	}

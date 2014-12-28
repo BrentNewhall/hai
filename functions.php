@@ -64,7 +64,7 @@ function displayComposePane( $flavor, $db, $userID, $post_id = "", $recipient_id
 	$button_area_width = 175;
 	$width = 500;
 	$height = 350;
-	$collapsed_height = 75;
+	$collapsed_height = 25;
 	$write_button_label = "Write";
 	$compose_id = "compose-post";
 	$compose_class = "compose-post";
@@ -118,11 +118,29 @@ function displayComposePane( $flavor, $db, $userID, $post_id = "", $recipient_id
 	?>
 	<div style="display: table">
 		<div style="display: table-row">
-			<div style="display: table-cell; width: <?php echo $button_area_width; ?>px; height: <?php echo $collapsed_height; ?>px; text-align: center; vertical-align: middle;" id="<?php echo $tools_id; ?>">
+			<div style="display: table-cell; width: <?php echo $button_area_width; ?>px; height: <?php echo $collapsed_height; ?>px; text-align: center; vertical-align: top;" id="<?php echo $tools_id; ?>">
+				<div id="<?php echo $tools_id; ?>-closed">
 				<button class="reply-button" onclick="javascript:toggleComposePane('<?php echo $tools_id; ?>','<?php echo $compose_pane_id; ?>','<?php echo $compose_id; ?>'); return false;"><?php echo $write_button_label; ?></button>
+				</div>
+				<div id="<?php echo $tools_id; ?>-open" style="display: none">
+				<?php
+				$stmt = $db->stmt_init();
+				$stmt->prepare( "SELECT username, visible_name, real_name, profile_public FROM users WHERE id = ?" );
+				$stmt->bind_param( "s", $userID );
+				$stmt->execute();
+				$stmt->bind_result( $username, $visible_name, $real_name, $profile_public );
+				$stmt->fetch();
+				$stmt->close();
+				if( $flavor == "comment" )
+					printAuthorInfo( $db, $userID, $userID, $username, $visible_name, $real_name, $profile_public, $post_id, "comment" );
+				else
+					printAuthorInfo( $db, $userID, $userID, $username, $visible_name, $real_name, $profile_public, $post_id );
+				?>
+				<input type="submit" value="Post" class="reply-button" /><br /><br /><button class="discard-button" onclick='javascript:toggleComposePane("<?php echo $tools_id; ?>","<?php echo $compose_pane_id; ?>","<?php echo $compose_post_id; ?>");return false;'>Discard</button>
+				</div>
 			</div>
 			<div style="width: <?php echo $width; ?>px; background-color: white; display: none" id="<?php echo $compose_pane_id; ?>">
-				<textarea class="<?php echo $compose_class; ?>" name="compose-post" id="<?php echo $compose_id; ?>" onkeyup="javascript:updatePreview('<?php echo $compose_id; ?>','<?php echo $preview_id; ?>');" /></textarea><br />
+				<textarea style="outline: 0" class="<?php echo $compose_class; ?>" name="compose-post" id="<?php echo $compose_id; ?>" onkeyup="javascript:updatePreview('<?php echo $compose_id; ?>','<?php echo $preview_id; ?>');" /></textarea><br />
 				<div class="progress-bar" id="progress-bar-<?php echo $compose_id; ?>"></div>
 				<?php
 				if( $flavor == "post" )
@@ -133,7 +151,9 @@ function displayComposePane( $flavor, $db, $userID, $post_id = "", $recipient_id
 						{
 						$world_value = get_db_value( $db, "SELECT display_name FROM worlds WHERE id = ?", array( "s", &$_GET["i"] ) );
 						}
-					if( $recipient_id != "" )
+					if( $recipient_id == " " )
+						print( "<span id=\"recipient-box\">Wave</span>\n" );
+					elseif( $recipient_id != "" )
 						{
 						$stmt = $db->stmt_init();
 						$stmt->prepare( "SELECT visible_name, real_name, profile_public FROM users WHERE id = ?" );

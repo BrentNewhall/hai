@@ -1,5 +1,4 @@
 <?php
-//function displayPosts( $db, $db2, $sql, $userID, $max_posts, $param_types, $param1 = "", $param2 = "", $param3 = "" )
 function displayPosts( $db, $db2, $sql, $userID, $max_posts, $params = NULL )
 	{
 	$total_count_sql = substr( $sql, strpos( $sql, " FROM " ) );
@@ -106,6 +105,12 @@ function printCommentEdits( $db, $comment_id )
 
 function displayPost( $db, $db2, $post_id, $userID )
 	{
+	global $login_user_is_op;
+	$is_sticky = "";
+	if( isset( $login_user_is_op )  &&  $login_user_is_op != 0 )
+		{ // Display sticky
+		$is_sticky = strval( get_db_value( $db, "SELECT sticky FROM room_posts WHERE post = ?", array( "s", &$post_id ) ) );
+		}
 	$stmt = $db->stmt_init();
 	$sql = "SELECT posts.content, " .
 	              "GREATEST(IFNULL(posts.created,0)," .
@@ -149,8 +154,20 @@ function displayPost( $db, $db2, $post_id, $userID )
 		print( "<div class=\"post-content\"" );
 		if( $userID != ""  &&  $userID != 0 )
 			print( " onmouseover=\"javascript:document.getElementById('post-navigation-$post_id').style.visibility='visible';\" onmouseleave=\"javascript:document.getElementById('post-navigation-$post_id').style.visibility='hidden';\"" );
+		if( strlen($content) > 1500 )
+			{
+			$post_content_id = uniqid( "post-content", true );
+			print( " style=\"display: block; height: 300px; overflow: hidden; position: relative;\" id=\"$post_content_id\"" );
+			}
 		print( ">" );
+		if( strlen($content) > 1500 )
+			{
+			$read_more_id = uniqid( "read-more", true );
+			print( "<div id=\"$read_more_id\" style=\"background-color: white; position: absolute; left: 0px; bottom: 0px; padding: 3px;\"><a href=\"#\" onclick=\"javascript:document.getElementById('$post_content_id').style.height='auto';document.getElementById('$post_content_id').style.overflow='auto';document.getElementById('$read_more_id').style.display='none';return false;\">Read more</a></div>\n" );
+			}
 		print( "<div class=\"timestamp\"><a href=\"post.php?i=$post_id#main-post\">" . getAge( $created ) . "</a></div>\n" );
+		if( $is_sticky == "1" )
+			print( "<div class=\"sticky-icon\"><img src=\"assets/images/star.png\" width=\"16\" height=\"16\" alt=\"Sticky\" title=\"This post is 'sticky,' so it will appear at the top of the room's posts.\" /></div>\n" );
 		if( $editable == 1 )
 			{
 			$timeout = intval( get_db_value( $db, "SELECT timeout FROM post_locks WHERE post = ?", array( "s", &$post_id ) ) );
@@ -254,6 +271,10 @@ function displayPost( $db, $db2, $post_id, $userID )
 			{
 			$snippet = getPostSnippet( $content );
 			print( "<div id=\"post-navigation-$post_id\" class=\"post-navigation\" style=\"visibility: hidden\"><a href=\"post.php?i=$post_id#main-post\">View conversation</a> &nbsp; " );
+			if( $is_sticky == "1" )
+				print( "<a href=\"toggle_sticky.php?i=$post_id&v=0\">Unsticky</a> &nbsp; " );
+			elseif( $is_sticky == "0" )
+				print( "<a href=\"toggle_sticky.php?i=$post_id&v=1\">Sticky</a> &nbsp; " );
 			if( $author_id == $userID )
 				{
 				$compressed_content = compressContent( $content );

@@ -40,6 +40,8 @@ if( isset( $_GET["i"] ) )
 	// Compose Wave
 	displayComposePane( "post", $db, $userID, "", $_GET["i"] );
 	}
+else
+	displayComposePane( "post", $db, $userID, "", " " );
 
 // Display waves
 $sql = getStandardSQLselect() .

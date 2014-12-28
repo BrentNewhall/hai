@@ -70,7 +70,7 @@ else
 	if( $tab == "Everything" )
 		{
 		$sql = fixSQL( getStandardSQL( "Everything" ), $start_index, $posts_per_page );
-		displayPosts( $db, $db2, $sql, $userID, $posts_per_page, array( "s", &$userID ) );
+		displayPosts( $db, $db2, $sql, $userID, $posts_per_page, array( "ss", &$userID, &$userID ) );
 		}
 	elseif( $tab == "Everything User" )
 		{

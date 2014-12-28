@@ -225,6 +225,23 @@ function updatePreview( source_div_id, target_div_id )
 
 function toggleComposePane( tools_id, compose_pane_id, compose_post_id )
 	{
+	if( document.getElementById(tools_id + "-closed").style.display == "none" )
+		{
+		document.getElementById(tools_id + "-closed").style.display = "block";
+		document.getElementById(tools_id + "-open").style.display = "none";
+		document.getElementById(compose_pane_id).style.display = "none";
+		document.getElementById("formatting-hints").style.display = "none";
+		document.getElementById(compose_pane_id+"-author-div").style.display = "none";
+		}
+	else
+		{
+		document.getElementById(tools_id + "-closed").style.display = "none";
+		document.getElementById(tools_id + "-open").style.display = "block";
+		document.getElementById(compose_pane_id).style.display = "block";
+		document.getElementById(compose_post_id).focus();
+		document.getElementById("formatting-hints").style.display = "block";
+		}
+		return;
 	var button_label = "Write";
 	if( compose_post_id != "compose-post" )
 		button_label = "Reply";
@@ -234,12 +251,15 @@ function toggleComposePane( tools_id, compose_pane_id, compose_post_id )
 		document.getElementById(compose_pane_id).style.display = "block";
 		document.getElementById(compose_post_id).focus();
 		document.getElementById("formatting-hints").style.display = "block";
+		//alert( compose_pane_id + "-author-div" );
+		//document.getElementById(compose_pane_id + "-author-div").style.display = "block";
 		}
 	else
 		{
 		document.getElementById(tools_id).innerHTML = "<button onclick='javascript:toggleComposePane(\"" + tools_id + "\",\"" + compose_pane_id + "\",\"" + compose_post_id + "\");return false;'>" + button_label + "</button>";
 		document.getElementById(compose_pane_id).style.display = "none";
 		document.getElementById("formatting-hints").style.display = "none";
+		document.getElementById(compose_pane_id+"-author-div").style.display = "none";
 		}
 	}
 
@@ -531,7 +551,7 @@ function passwordHint( source_div, target_div )
 	div.innerHTML = output + ".";
 	}
 
-function displayWorldRestrictions( source_div, restrictions_div, public_checkbox )
+/* function displayWorldRestrictions( source_div, restrictions_div, public_checkbox )
 	{
 	var text = document.getElementById( source_div ).value;
 	if( text == "" )
@@ -579,7 +599,7 @@ function passwordHint( source_div, target_div )
 	else
 		output += "<span style=\"color: green\">at least 1<br />symbol</span>";
 	div.innerHTML = output + ".";
-	}
+	} */
 
 // -----------
 // FILE UPLOAD
