@@ -3,8 +3,6 @@ $page_title = "Groups";
 require_once( "header.php" );
 require_once( "database.php" );
 
-requireLogin( $db, $db2 );
-
 displayNavbar( $db, $userID );
 
 ?>

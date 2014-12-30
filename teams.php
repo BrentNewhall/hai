@@ -53,8 +53,6 @@ if( isset( $_POST["update-team"] )  &&  $userID != "" )
 		}
 	}
 
-requireLogin( $db, $db2 );
-
 displayNavbar( $db, $userID );
 
 print( "<h1>$page_title</h1>\n" );

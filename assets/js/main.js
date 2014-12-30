@@ -51,14 +51,17 @@ function hideDialogBox()
 
 function hidePasswordField( checkbox_id, password_id )
 	{
+	pwd = document.getElementById(password_id);
 	if( document.getElementById(checkbox_id).checked )
 		{
-		document.getElementById(password_id).setAttribute("type","text");
+		pwd.setAttribute("type","text");
 		}
 	else
 		{
-		document.getElementById(password_id).setAttribute("type","password");
+		pwd.setAttribute("type","password");
 		}
+	pwd.focus();
+	pwd.setSelectionRange( pwd.value.length, pwd.value.length );
 	}
 
 function processListItem( list_item, list_type, in_list, num_stars )
@@ -517,6 +520,35 @@ function displayWorldRestrictions( source_div, restrictions_div, public_checkbox
 		}
 	}
 
+function checkUsername( username_div, message_div )
+	{
+	if (window.XMLHttpRequest)
+   		// Create the object for browsers
+   		xmlhttp = new XMLHttpRequest();
+   	else
+   		// Create the object for browser versions prior to IE 7
+   		xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+   	xmlhttp.onreadystatechange=function()
+   		{
+   		// if server is ready with the response
+   		if (xmlhttp.readyState==4)
+   			{
+   			// if everything is Ok on browser
+   			if(xmlhttp.status==200)
+   				{    
+				// Place response in target div
+				var div = document.getElementById(message_div);
+				div.innerHTML = xmlhttp.responseText;
+   				}
+   			}
+   		}
+   	//send the selected data to the php page
+	username = document.getElementById(username_div).value;
+  	xmlhttp.open("GET","get_username.php?u=" + username,true);
+	xmlhttp.setRequestHeader("Content-type","application/x-www-form-urlencoded");
+	xmlhttp.send(null);
+	}
+
 function passwordHint( source_div, target_div )
 	{
 	var pwd = document.getElementById(source_div).value;
@@ -525,29 +557,30 @@ function passwordHint( source_div, target_div )
 	//at least 8 characters,<br />and must contain at least 1 upper-case<br />character, at least 1 number, and at least 1<br />symbol.</p>
 	if( pwd == "" )
 		{
-		div.innerHTML = output + " at least 8 characters,<br />and must contain at least 1 upper-case<br />character, at least 1 number, and at least 1<br />symbol.";
+		div.innerHTML = output + " at least 10 characters,<br />and must contain at least 1 upper-case<br />character, at least 1 number, and at least 1<br />symbol.";
 		return;
 		}
-	if( pwd.length < 8 )
+	if( pwd.length < 10 )
 		//div.innerHTML = "Password must have at least 8 characters.";
-		output += "<span style=\"color: red\">at least 8 characters</span>";
+		output += "<span style=\"color: red\">at least 10 characters</span>";
 	else
-		output += "<span style=\"color: green\">at least 8 characters</span>";
+		output += "<span style=\"color: green\">at least 10 characters</span>";
 	output += ",<br />and must contain ";
-	if( ! pwd.match( /[A-Z]/ ) )
-		output += "<span style=\"color: red\">at least 1 upper-case<br />character</span>";
+	if( ( ! pwd.match( /[A-Z]/ ) )  &&  ( ! pwd.match( /[0-9]/ ) )  &&  ( ! pwd.match( /[^A-Za-z0-9]/ ) ) )
+		output += "<span style=\"color: red\">at least 1 upper-case<br />character, at least 1 number, or at least 1<br />symbol</span>";
 	else
-		output += "<span style=\"color: green\">at least 1 upper-case<br />character</span>";
-	output += ", ";
+		//output += "<span style=\"color: green\">at least 1 upper-case<br />character</span>";
+		output += "<span style=\"color: green\">at least 1 upper-case<br />character, at least 1 number, or at least 1<br />symbol</span>";
+	/* output += ", ";
 	if( ! pwd.match( /[0-9]/ ) )
 		output += "<span style=\"color: red\">at least 1 number</span>";
 	else
 		output += "<span style=\"color: green\">at least 1 number</span>";
-	output += ", and ";
+	output += ", or ";
 	if( ! pwd.match( /[^A-Za-z0-9]/ ) )
 		output += "<span style=\"color: red\">at least 1<br />symbol</span>";
 	else
-		output += "<span style=\"color: green\">at least 1<br />symbol</span>";
+		output += "<span style=\"color: green\">at least 1<br />symbol</span>"; */
 	div.innerHTML = output + ".";
 	}
 

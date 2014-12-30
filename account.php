@@ -3,7 +3,6 @@ $page_title = "Account";
 require_once( "database.php" );
 require_once( "header.php" );
 
-requireLogin( $db, $db2 );
 displayNavbar( $db, $userID );
 
 function deleteFromTable( $db, $table, $userID )
@@ -239,10 +238,10 @@ if( isset( $_POST["visible-name"] ) )
 
 
 $stmt = $db->stmt_init();
-$sql = "SELECT visible_name, real_name, profile_public, about FROM users WHERE username = ?";
+$sql = "SELECT visible_name, real_name, profile_public, about FROM users WHERE id = ?";
 if( $stmt->prepare( $sql ) )
 	{
-	$stmt->bind_param( "s", $_SESSION["logged_in"] );
+	$stmt->bind_param( "s", $userID );
 	$stmt->execute();
 	$stmt->bind_result( $visible_name, $real_name, $profile_public, $about );
 	$stmt->fetch();
@@ -272,6 +271,10 @@ $phones = array();
 $phones = getList( $db, "phone", $userID );
 
 
+if( isset( $_COOKIE["logged_in"] ) )
+	$username = $_COOKIE["logged_in"];
+else
+	$username = $_SESSION["logged_in"];
 ?>
 <h1>Account</h1>
 <form action="account.php" method="post">
@@ -279,7 +282,7 @@ $phones = getList( $db, "phone", $userID );
 <table border="0">
 	<tr>
 		<td class="label">Username</td>
-		<td><?php echo $_SESSION["logged_in"]; ?></td>
+		<td><?php echo $username; ?></td>
 	</tr>
 	<tr>
 		<td class="label">Visible Name</td>

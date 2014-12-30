@@ -119,7 +119,7 @@ function displayPost( $db, $db2, $post_id, $userID )
 	              "users.username, users.profile_public, " .
 	              "posts.author, posts.parent, posts.editable, " .
 				  "posts.comments, posts.public, " .
-	              "broadcasts.id, waves.post " .
+	              "broadcasts.id, waves.recipient " .
 	       "FROM posts " .
 	       "JOIN users ON (posts.author = users.id) " .
 	       "LEFT JOIN broadcasts ON (broadcasts.post = posts.id) " .
@@ -132,7 +132,7 @@ function displayPost( $db, $db2, $post_id, $userID )
 		print $db->error;
 		print $stmt->error;
 		$stmt->store_result();
-		$stmt->bind_result( $content, $created, $author_visible_name, $author_real_name, $author_username, $author_public, $author_id, $parent_post_id, $editable, $comments, $post_public, $broadcast_id, $wave );
+		$stmt->bind_result( $content, $created, $author_visible_name, $author_real_name, $author_username, $author_public, $author_id, $parent_post_id, $editable, $comments, $post_public, $broadcast_id, $wave_recipient );
 		$post_index = 0;
 		$stmt->fetch();
 		$stmt->close();
@@ -193,8 +193,16 @@ function displayPost( $db, $db2, $post_id, $userID )
 			}
 		if( $world_name != "" )
 			print( "<div class=\"in-world\">In the world of <a href=\"world.php?i=$world_id\" class=\"world-name\">$world_name</a>:</div>\n" );
-		if( $wave != "" )
-			print( "<div class=\"wave-header\">Wave:</div>\n" );
+		if( $wave_recipient != "" )
+			{
+			$w_stmt = $db->prepare( "SELECT visible_name, real_name, profile_public FROM users WHERE id = ?" );
+			$w_stmt->bind_param( "s", $wave_recipient );
+			$w_stmt->execute();
+			$w_stmt->bind_result( $w_visible_name, $w_real_name, $w_public );
+			$w_stmt->fetch();
+			$w_stmt->close();
+			print( "<div class=\"wave-header\">Wave to " . getAuthorLink( $wave_recipient, $w_visible_name, $w_real_name, $w_public ) . ":</div>\n" );
+			}
 		if( $broadcast_id != "" )
 			{
 			$u_stmt = $db->prepare( "SELECT broadcasts.created, users.id, users.real_name, users.visible_name, users.profile_public FROM broadcasts JOIN users ON (broadcasts.user = users.id) WHERE broadcasts.id = ?" );

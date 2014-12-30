@@ -160,7 +160,7 @@ if( $userID != "" )
 		print( "<h1>All</h1>\n" );
 		$sql = getStandardSQL( "all" );
 		displayComposePane( "post", $db, $userID );
-		displayPosts( $db, $db2, $sql, $userID, $posts_per_page, array( "sss", &$userID, &$userID, &$userID ) );
+		displayPosts( $db, $db2, $sql, $userID, $posts_per_page, array( "sssss", &$userID, &$userID, &$userID, &$userID, &$userID ) );
 		}
 	}
 else

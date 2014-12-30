@@ -7,8 +7,6 @@ $page_title = "Your " . ucwords( $media );
 require_once( "database.php" );
 require_once( "header.php" );
 
-requireLogin( $db, $db2 );
-
 displayNavbar( $db, $userID );
 
 function getWhereUsed( $db, $filename )

@@ -34,7 +34,8 @@ print( "<div style=\"position: fixed; bottom: 5px; right: 5px; color: white; fon
 </div>
 
 <?php
-print getLogin();
+if( $_SERVER["PHP_SELF"] != "/create_account.php" )
+	print getLogin();
 
 //siteIsDown();
 function siteIsDown()

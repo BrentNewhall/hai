@@ -48,9 +48,11 @@ function getStandardSQL( $type )
 		       "LEFT JOIN user_teams ON (user_teams.user = ?) " .
 		       "LEFT JOIN user_team_members ON (user_team_members.team = user_teams.id )" .
 			   "LEFT JOIN broadcasts ON (broadcasts.post = posts.id AND broadcasts.user = user_team_members.user) " .
+			   "LEFT JOIN waves ON waves.post = posts.id AND waves.recipient = ? " .
 		       "WHERE ( posts.author = ? OR user_team_members.user = posts.author ) " .
 			   "AND posts.id NOT IN (SELECT post FROM room_posts) " .
 			   "AND posts.author NOT IN (SELECT troll FROM blocks WHERE blocker = ?) " .
+			   "AND (waves.post IS NULL OR waves.recipient = ?) " .
 		       "ORDER BY bothcreated DESC LIMIT $posts_per_page";
 	return "";
 	}
@@ -485,7 +487,7 @@ function printAuthorInfo( $db, $userID, $author_id, $author_username, $author_vi
 		}
 	$all_groups .= "<input type=\"submit\" value=\"Update\">\n</form>\n";
 	print(  "<div class=\"$author_class\" " );
-	if( $author_username != $_SESSION["logged_in"]  &&  $userID != "" )
+	if( $author_username != $_SESSION["logged_in"]  &&  $author_username != $_COOKIE["logged_in"]  &&  $userID != "" )
 		print( "onmouseover=\"javascript:document.getElementById('author-details-$post_id').style.display='block';\" onmouseleave=\"javascript:document.getElementById('author-details-$post_id').style.display='none';document.getElementById('update-group-membership-$post_id').style.display='none';\"" );
 	print( "><img width=\"$avatar_size\" height=\"$avatar_size\" src=\"/assets/images/avatars/$author_id\" /><br />" );
 	print getAuthorLink( $author_id, $author_visible_name, $author_real_name, $author_public );

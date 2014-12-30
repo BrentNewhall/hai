@@ -57,10 +57,7 @@ if( isset( $_POST["users"] )  &&  $userID != ""  &&  $room_id != "" )
 
 require_once( "header.php" );
 
-requireLogin( $db, $db2 );
-
-if( $userID != "" )
-	displayNavbar( $db, $userID );
+displayNavbar( $db, $userID );
 
 print( "<h1>Add user to room</h1>\n" );
 

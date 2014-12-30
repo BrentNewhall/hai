@@ -410,6 +410,13 @@ div.comment-author	{
 .recover-password	{
 	font-size: 9pt;
 	}
+/* Account creation */
+.username-exists	{
+	color: red;
+	}
+.username-available	{
+	color: green;
+	}
 
 /* Edits */
 #post-history-container	{

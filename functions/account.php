@@ -1,118 +1,27 @@
 <?php
 // Login and account-related functions
 
-function requireLogin( $db, $db2 )
-	{
-	if( ! isset( $_SESSION["logged_in"] ) )
-		{
-		/* if( isset( $_GET["error"] ) )
-			printError( $_GET["error"] ); */
-		$username = "";
-		if( isset( $_GET["username"] ) )
-			$username = $_GET["username"];
-		$password = "";
-		if( isset( $_GET["password"] ) )
-			$password = $_GET["password"];
-?>
-<h2>Log in</h2>
-<form action="login.php" method="post">
-<table border="0" style="margin: auto; padding-top: 25px">
-	<tr>
-		<td class="label">Username</td>
-		<td><input type="text" name="username" autofocus="autofucus" value="<?php echo $username; ?>"/></td>
-	</tr>
-	<tr>
-		<td class="label">Password</td>
-		<td><input type="text" id="login-password" name="password" value="<?php echo $password; ?>" onkeyup="javascript:passwordHint('login-password','password-hint');"/></td>
-		<td><input type="checkbox" id="visible-checkbox" checked="yes" onclick="javascript:hidePasswordField('visible-checkbox','login-password');" /> <label for="visible-checkbox">Display password</label></td>
-	</tr>
-	<tr>
-		<td></td>
-		<td colspan="2" id="ppassword-hint"></td>
-	</tr>
-	<tr>
-		<td></td>
-		<td><input type="submit" name="submit" value="Log in" /></td>
-	</tr>
-	<tr>
-		<td></td>
-		<td colspan="2" style="font-size: 10pt; padding-top: 50px;">
-		<p>To create a new account, enter your desired<br />username and password above and click here:</p>
-		<input type="submit" name="submit" value="Create account" />
-		<p id="password-hint">Passwords must have at least 8 characters,<br />
-		   and must contain at least 1 upper-case<br />
-		   character, at least 1 number, and at least 1<br />
-		   symbol.</p>
-		</td>
-	</tr>
-</table>
-</form>
-<p><a href="recover.php">Recover your password</a></p>
-
-<div style="float: left; width: 300px">
-<h2>Worlds</h2>
-<ul>
-<?php
-$stmt = $db->stmt_init();
-$stmt->prepare( "SELECT id, display_name FROM worlds ORDER BY display_name" );
-$stmt->execute();
-$stmt->bind_result( $id, $name );
-while( $stmt->fetch() )
-	{
-	print( "<li> <a href=\"world.php?i=$id\">$name</a></li>\n" );
-	}
-?>
-</ul>
-</div>
-
-<div style="float: left; width: 300px">
-<h2>Rooms</h2>
-<ul>
-<?php
-$stmt = $db->stmt_init();
-$stmt->prepare( "SELECT id, name FROM rooms ORDER BY name" );
-$stmt->execute();
-$stmt->bind_result( $id, $name );
-while( $stmt->fetch() )
-	{
-	print( "<li> <a href=\"room.php?i=$id\">$name</a></li>\n" );
-	}
-?>
-</ul>
-</div>
-
-<br style="clear: both" />
-<h2>Recent Public Posts</h2>
-<?php
-		$sql = getStandardSQL( "Everything" );
-		displayPostsV2( $db, $db2, $sql, "", 10, "none" );
-		require_once( "footer.php" );
-		exit( 0 );
-		} // end if logged_in session variable unset
-	} // end requireLogin()
-
-
-
 function getLogin()
 	{
-	if( ! isset( $_SESSION["logged_in"] ) )
+	if( ( ! isset( $_SESSION["logged_in"] ) )  &&
+	    ( ! isset( $_COOKIE["logged_in"] ) ) )
 		{
 ?>
 <div id="login-box">
 <form action="login.php" method="post">
 <table border="0" style="margin: auto; padding: 0px" cellpadding="0" cellspacing="0">
-<tr>
-<td class="label">Username</td><td><input type="text" name="username" autofocus="autofucus" size="8" value="<?php echo $username; ?>"/></tr>
-<td class="label">Password</td><td><input type="text" id="login-password" name="password" size="8" value="<?php echo $password; ?>" onkeyup="javascript:passwordHint('login-password','password-hint');"/></tr>
+<tr><td class="label">Username</td><td><input type="text" name="username" autofocus="autofocus" size="8" value="<?php echo $username; ?>"/></tr>
+<tr><td class="label">Password</td><td><input type="text" id="login-password" name="password" size="8" value="<?php echo $password; ?>" onkeyup="javascript:passwordHint('login-password','password-hint');"/></tr>
 </table>
-<input type="checkbox" id="visible-checkbox" checked="yes" onclick="javascript:hidePasswordField('visible-checkbox','login-password');" /> <label for="visible-checkbox">Display password</label><br />
-<input type="submit" name="submit" value="Log in" /><br />
-<br />
-<input type="submit" name="submit" value="Create account" />
+<table border="0" style="margin: auto; padding: 0px" cellpadding="0" cellspacing="0">
+<tr><td><input type="checkbox" id="visible-checkbox" checked="yes" onclick="javascript:hidePasswordField('visible-checkbox','login-password');" /></td><td><label for="visible-checkbox">Display password</label></td></tr>
+<tr><td><input type="checkbox" id="stay-logged-in-checkbox" name="stay-logged-in" /></td><td><label for="stay-logged-in-checkbox" title="This sets a cookie.">Stay logged in<br />for 30 days</label></td></tr>
+</table>
+<input type="submit" name="submit" value="Log in" />
 </form>
 <div id="password-hint"></div>
-</form>
 <p class="recover-password"><a href="recover.php">Recover your password</a></p>
+<p class="recover-password"><a href="create_account.php">Create an account</a></p>
 </div>
 <?php
 		}
@@ -123,11 +32,11 @@ function getLogin()
 
 function testPassword( $password )
 	{
-	if( ( ! preg_match( "/[A-Z]/", $password ) )  ||
-	    ( ! preg_match( "/[0-9]/", $password ) )  ||
-	    ( ! preg_match( "/[!@#$%^&\*\(\)\-_=+\[{\]}\\|;:'\",<\.>\/\?]/", $password ) ) )
+	if( ( ! preg_match( "/[A-Z]/", $password ) )  &&
+	    ( ! preg_match( "/[0-9]/", $password ) )  &&
+	    ( ! preg_match( "/[^A-Za-z0-9]/", $password ) ) )
 		return 0;
-	if( strlen($password) < 8 )
+	if( strlen($password) < 10 )
 		return 0;
 	return 1;
 	}
