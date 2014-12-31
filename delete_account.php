@@ -13,8 +13,7 @@ if( $userID != "" )
 	deleteAccount( $db, $userID );
 	// Logout user
 	unset( $_SESSION["logged_in"] );
-	setcookie( "logged_in", $username, time() - 3600, "/",
-	           $_SERVER["SERVER_NAME"] );
+	setcookie( "logged_in", $username, time() - 3600, "/" );
 	print( "<h1>Account Deleted</h1>\n" );
 	print( "<p>Your account has been completely deleted.</p>\n" );
 	require_once( "footer.php" );

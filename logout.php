@@ -4,8 +4,7 @@
 
 session_start();
 unset( $_SESSION["logged_in"] );
-setcookie( "logged_in", $username, time() - 3600, "/",
-           $_SERVER["SERVER_NAME"] );
+setcookie( "logged_in", $username, time() - 3600, "/" );
 header( "Location: index.php\n\n" );
 exit( 0 );
 

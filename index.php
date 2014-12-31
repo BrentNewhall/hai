@@ -153,7 +153,7 @@ if( $userID != "" )
 		print( "<h1>$team_name</h1>\n" );
 		displayComposePane( "post", $db, $userID );
 		$sql = getStandardSQL( "team" );
-		displayPosts( $db, $db2, $sql, $userID, $posts_per_page, array( "ss", &$_GET["tab"], &$userID ) );
+		displayPosts( $db, $db2, $sql, $userID, $posts_per_page, array( "ssss", &$_GET["tab"], &$userID, &$userID, &$userID ) );
 		}
 	else
 		{

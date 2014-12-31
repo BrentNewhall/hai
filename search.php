@@ -24,26 +24,38 @@ if( isset( $_GET["q"] )  &&  $_GET["q"] != "" )
 	$query = $_GET["q"];
 	$page_title = "$query - $page_title";
 	}
+$user_query = "";
+if( isset( $_GET["u"] )  &&  $_GET["u"] != "" )
+	{
+	$user_query = $_GET["u"];
+	$page_title = "$user_query - $page_title";
+	}
 require_once( "header.php" );
 require_once( "database.php" );
 
 displayNavbar( $db, $userID );
 
-print( "<h1>Search</h1>\n" .
-       "<form action=\"search.php\" method=\"get\">\n" .
-       "<input type=\"text\" name=\"q\" value=\"$query\" size=\"20\" />\n" .
-       "<input type=\"submit\" value=\"search\" />\n" .
-       "</form>\n" );
+?>
+<div style="float: left; width: 325px">
+<h1>Search</h1>
+<form action="search.php" method="get">
+<input type="text" name="q" value="<?php echo $query; ?>" size="20" />
+<input type="submit" value="search posts" />
+</form>
+</div>
+<div style="float: left; width: 325px; padding-bottom: 25px">
+<h1>Users</h1>
+<form action="search.php" method="get">
+<input type="text" name="u" value="<?php echo $user_query; ?>" size="20" />
+<input type="submit" value="search users" />
+</form>
+</div>
+<br />
+<?php
 
-if( $query != "" )
+function getTerms( $query )
 	{
-	$sql = getStandardSQLselect() .
-		   "LEFT JOIN broadcasts ON (broadcasts.post = posts.id) " .
-		   "LEFT JOIN comments ON (comments.post = posts.id) " .
-	       "WHERE ";
-	
-	$contains_negation = false;
-	$query = str_replace( "  ", " ", $query );
+	$query = str_replace( "  ", " ", trim( $query ) );
 	$terms = explode( " ", $query );
 	// Implode quoted strings
 	for( $i = 0; $i < count($terms); $i++ )
@@ -56,7 +68,6 @@ if( $query != "" )
 				array_push( $quoted_string, $terms[$j] );
 				if( substr( $terms[$j], strlen($terms[$j]) - 1 ) == "\"" )
 					{
-					//$terms = array_splice( $terms, $i, $j-$i, implode( " ", $temp ) );
 					$qs = implode( " ", $quoted_string );
 					$qs = substr( $qs, 1, strlen($qs) - 2 );
 					array_splice( $terms, $i, $j-$i+1, array( $qs ) );
@@ -64,6 +75,38 @@ if( $query != "" )
 				}
 			}
 		}
+	return $terms;
+	}
+
+if( $query != "" )
+	{
+	$sql = getStandardSQLselect() .
+		   "LEFT JOIN broadcasts ON (broadcasts.post = posts.id) " .
+		   "LEFT JOIN comments ON (comments.post = posts.id) " .
+	       "WHERE ";
+	
+	$contains_negation = false;
+	/* $query = str_replace( "  ", " ", trim( $query ) );
+	$terms = explode( " ", $query );
+	// Implode quoted strings
+	for( $i = 0; $i < count($terms); $i++ )
+		{
+		if( substr( $terms[$i], 0, 1 ) == "\"" )
+			{
+			$quoted_string = array( $terms[$i] );
+			for( $j = $i+1; $j < count($terms); $j++ )
+				{
+				array_push( $quoted_string, $terms[$j] );
+				if( substr( $terms[$j], strlen($terms[$j]) - 1 ) == "\"" )
+					{
+					$qs = implode( " ", $quoted_string );
+					$qs = substr( $qs, 1, strlen($qs) - 2 );
+					array_splice( $terms, $i, $j-$i+1, array( $qs ) );
+					}
+				}
+			}
+		} */
+	$terms = getTerms( $query );
 	$query_terms = array( "" );
 	foreach( $terms as $term )
 		{
@@ -95,10 +138,10 @@ if( $query != "" )
 				array_push( $negative, substr( $term, 1 ) );
 			else
 				array_push( $positive, $term );
-		print( "<p>Searching posts and comments that contain " . getNiceList( $positive ) . " and do <em>not</em> contain " . getNiceList( $negative ) . ".</p>\n" );
+		print( "<p>Searching for posts and comments that contain " . getNiceList( $positive ) . " and do <em>not</em> contain " . getNiceList( $negative ) . ".</p>\n" );
 		}
 	else
-		print( "<p>Searching posts and comments that contain " . getNiceList( $terms ) . ".</p>\n" );
+		print( "<p>Searching for posts and comments that contain " . getNiceList( $terms ) . ".</p>\n" );
 	
 	// Display posts that match that hashtag
 	$sql .= "posts.public = 1 " .
@@ -106,10 +149,44 @@ if( $query != "" )
 	
 	displayPosts( $db, $db2, $sql, $userID, 25, $query_terms );
 	}
+elseif( $user_query != "" )
+	{
+	print( "<p>Searching for users with names that contain the string <strong>$user_query</strong>.</p>\n" );
+	$sql = "SELECT id, visible_name, real_name, profile_public FROM users WHERE visible_name LIKE ?";
+	$stmt = $db->stmt_init();
+	$stmt->prepare( $sql );
+	$uq = "%" . $user_query . "%";
+	$stmt->bind_param( "s", $uq );
+	$stmt->execute();
+	$stmt->bind_result( $user_id, $visible_name, $real_name, $profile_public );
+	$stmt->store_result();
+	if( $stmt->num_rows > 0 )
+		print( "<ul>\n" );
+	while( $stmt->fetch() )
+		{
+		print( "<li id='author-link-$user_id' onmouseover=\"javascript:document.getElementById('author-details-$user_id').style.display='block';\" onmouseleave=\"javascript:document.getElementById('author-details-$user_id').style.display='none';\"> " . getAuthorLink( $user_id, $visible_name, $real_name, $profile_public ) );
+		print( "<div id='author-details-$user_id' style=\"display: none\">\n" );
+		$group_names_array = array();
+		$group_names = getGroupNames( $db, $user_id, $userID, $group_names_array );
+		$all_groups = getAllGroups( $db, $user_id, $userID, $group_names_array );
+		displayUserControls( "user-team-div-$user_id", $group_names, $all_groups, $visible_name, $user_id );
+		print( "</div>\n" );
+		print( "</li>\n" );
+		}	
+	if( $stmt->num_rows > 0 )
+		print( "</ul>\n" );
+	else
+		print( "<p>No users match.</p>\n" );
+	$stmt->close();
+	}
+else
+	{
+	print( "<br style=\"clear: both\" />\n" );
+	}
 
 ?>
 <hr />
-<p>Surround multiple words with " (double quotes) to search for phrases. Start a word with - to exclude that word from your search.</p>
+<p>When searching posts, surround multiple words with " (double quotes) to search for phrases. Start a word with - to exclude that word from your search.</p>
 <p>Examples:</p>
 <table border="0">
 	<tr>

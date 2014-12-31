@@ -39,8 +39,10 @@ function getStandardSQL( $type )
 		       "JOIN user_team_members utm ON (ut.id = utm.team AND utm.user = posts.author) " .
 		       "LEFT JOIN posts parent_posts on (parent_posts.id = posts.parent) " .
 			   "LEFT JOIN broadcasts ON (broadcasts.post = posts.id AND broadcasts.user = utm.user) " .
+			   "LEFT JOIN waves ON waves.post = posts.id AND waves.recipient = ? " .
 			   "WHERE posts.id NOT IN (SELECT post FROM room_posts) " .
 			   "AND posts.author NOT IN (SELECT troll FROM blocks WHERE blocker = ut.user) " .
+			   "AND posts.id NOT IN (SELECT post FROM waves WHERE recipient != ?) " .
 		       "ORDER BY bothcreated DESC LIMIT $posts_per_page";
 	elseif( $type == "all" )
 		return getStandardSQLselect() .
@@ -52,7 +54,7 @@ function getStandardSQL( $type )
 		       "WHERE ( posts.author = ? OR user_team_members.user = posts.author ) " .
 			   "AND posts.id NOT IN (SELECT post FROM room_posts) " .
 			   "AND posts.author NOT IN (SELECT troll FROM blocks WHERE blocker = ?) " .
-			   "AND (waves.post IS NULL OR waves.recipient = ?) " .
+			   "AND posts.id NOT IN (SELECT post FROM waves WHERE recipient != ?) " .
 		       "ORDER BY bothcreated DESC LIMIT $posts_per_page";
 	return "";
 	}
@@ -450,9 +452,42 @@ function printAuthorInfo( $db, $userID, $author_id, $author_username, $author_vi
 		$author_class = "comment-author";
 		$avatar_size = 30;
 		}
-	$stmt = $db->stmt_init();
 	// Build list of groups to which this person applies
 	$group_names_array = array();
+	$group_names = getGroupNames( $db, $author_id, $userID, $group_names_array );
+	// Build list of all groups
+	$all_groups = getAllGroups( $db, $author_id, $userID, $group_names_array );
+	print(  "<div class=\"$author_class\" " );
+	if( $author_username != $_SESSION["logged_in"]  &&  $author_username != $_COOKIE["logged_in"]  &&  $userID != "" )
+		print( "onmouseover=\"javascript:document.getElementById('author-details-$post_id').style.display='block';\" onmouseleave=\"javascript:document.getElementById('author-details-$post_id').style.display='none';document.getElementById('update-group-membership-$post_id').style.display='none';\"" );
+	print( "><img width=\"$avatar_size\" height=\"$avatar_size\" src=\"/assets/images/avatars/$author_id\" /><br />" );
+	print getAuthorLink( $author_id, $author_visible_name, $author_real_name, $author_public );
+	print( "<br />\n" );
+	if( $author_username != $_SESSION["logged_in"]  &&  $userID != ""  &&  $userID != 0 )
+		{
+		print( "<div id=\"author-details-$post_id\" class=\"author-details\" style=\"display: none\">" );
+		displayUserControls( "update-group-membership-$post_id", $group_names, $all_groups, $author_visible_name, $author_id );
+		print( "</div> <!-- #author-details -->\n" );
+		}
+	print(  "</div> <!-- .$author_class -->\n" );
+	}
+
+
+
+function displayUserControls( $div_id, $group_names, $all_groups, $author_visible_name, $author_id )
+	{
+	if( $group_names != "" )
+		print( "Member of <strong>$group_names</strong><br />" );
+	print( "<div id=\"$div_id\" class=\"update-group-membership\" style=\"display: none\">$all_groups</div>\n" );
+	print( "<a href=\"#\" onmouseover=\"javascript:document.getElementById('$div_id').style.display='block';return false;\" onmmouseleave=\"javascript:document.getElementById('$div_id').style.display='none';return false;\">Teams</a> &nbsp; <a href=\"waves.php?i=$author_id\" title=\"Send a private message to this person\">Wave</a> &nbsp; <a href=\"#\" onclick=\"javascript:displayBlock('$author_visible_name','$author_id');return false;\" title=\"Block this person\">Block</a>\n" );
+	}
+
+
+
+
+function getGroupNames( $db, $author_id, $userID, &$group_names_array )
+	{
+	$stmt = $db->stmt_init();
 	$stmt->prepare( "SELECT name FROM user_teams JOIN user_team_members ON (user_teams.id = user_team_members.team AND user_team_members.user = ?) WHERE user_teams.user = ?" );
 	print $db->error;
 	$stmt->bind_param( "ss", $author_id, $userID);
@@ -463,17 +498,17 @@ function printAuthorInfo( $db, $userID, $author_id, $author_username, $author_vi
 		array_push( $group_names_array, $group_name );
 		}
 	$group_names = implode( ", ", $group_names_array );
-	// Build list of all groups
+	return $group_names;
+	}
+
+function getAllGroups( $db, $author_id, $userID, $group_names_array )
+	{
 	$all_groups = "";
 	$all_groups = "<form action=\"index.php\" method=\"post\">\n" .
 	              "<input type=\"hidden\" name=\"action\" value=\"update-group-membership\" />\n" .
 	              "<input type=\"hidden\" name=\"user\" value=\"$author_id\" />\n";
-	/* if( isset( $_GET["tab"] ) )
-		$all_groups .= "<input type=\"hidden\" name=\"redirect\" value=\"" . $_SERVER["PHP_SELF"] . "?tab=" . $_GET["tab"] . "\" />\n";
-	elseif( isset( $_GET["i"] ) )
-		$all_groups .= "<input type=\"hidden\" name=\"redirect\" value=\"" . $_SERVER["PHP_SELF"] . "?i=" . $_GET["i"] . "\" />\n";
-	else */
 	$all_groups .= "<input type=\"hidden\" name=\"redirect\" value=\"" . getRedirectURL() . "\" />\n";
+	$stmt = $db->stmt_init();
 	$stmt->prepare( "SELECT id, name FROM user_teams WHERE user = ?" );
 	$stmt->bind_param( "s", $userID);
 	$stmt->execute();
@@ -486,22 +521,9 @@ function printAuthorInfo( $db, $userID, $author_id, $author_username, $author_vi
 		$all_groups .= "/> <label for=\"$group_id\"> $group_name</label><br />\n";
 		}
 	$all_groups .= "<input type=\"submit\" value=\"Update\">\n</form>\n";
-	print(  "<div class=\"$author_class\" " );
-	if( $author_username != $_SESSION["logged_in"]  &&  $author_username != $_COOKIE["logged_in"]  &&  $userID != "" )
-		print( "onmouseover=\"javascript:document.getElementById('author-details-$post_id').style.display='block';\" onmouseleave=\"javascript:document.getElementById('author-details-$post_id').style.display='none';document.getElementById('update-group-membership-$post_id').style.display='none';\"" );
-	print( "><img width=\"$avatar_size\" height=\"$avatar_size\" src=\"/assets/images/avatars/$author_id\" /><br />" );
-	print getAuthorLink( $author_id, $author_visible_name, $author_real_name, $author_public );
-	print( "<br />\n" );
-	if( $author_username != $_SESSION["logged_in"]  &&  $userID != ""  &&  $userID != 0 )
-		{
-		print( "<div id=\"author-details-$post_id\" class=\"author-details\" style=\"display: none\">" );
-		if( $group_names != "" )
-			print( "Member of <strong>$group_names</strong><br />" );
-		print( "<div id=\"update-group-membership-$post_id\" class=\"update-group-membership\" style=\"display: none\">$all_groups</div>\n" );
-		print( "<a href=\"#\" onmouseover=\"javascript:document.getElementById('update-group-membership-$post_id').style.display='block';return false;\" onmmouseleave=\"javascript:document.getElementById('update-group-membership-$post_id').style.display='none';return false;\">Teams</a> &nbsp; <a href=\"waves.php?i=$author_id\" title=\"Send a private message to this person\">Wave</a> &nbsp; <a href=\"#\" onclick=\"javascript:displayBlock('$author_visible_name','$author_id');return false;\" title=\"Block this person\">Block</a></div> <!-- #author-details -->\n" );
-		}
-	print(  "</div> <!-- .$author_class -->\n" );
+	return $all_groups;
 	}
+
 
 
 

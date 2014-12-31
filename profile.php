@@ -72,8 +72,14 @@ if( isset( $_GET["i"] )  &&  $_GET["i"] != "" )
 			$page_title = "$visible_name - $page_title";
 			require_once( "header.php" );
 			print( "<h1>$visible_name</h1>\n" );
-			if( $userID != "" )
-				displayNavbar( $db, $userID );
+			displayNavbar( $db, $userID );
+			// Display controls
+			$group_names_array = array();
+			$group_names = getGroupNames( $db, $user_id, $userID, $group_names_array );
+			$all_groups = getAllGroups( $db, $user_id, $userID, $group_names_array );
+			displayUserControls( "profile-page-team-div", $group_names, $all_groups, $visible_name, $user_id );
+			print( "<br />\n" );
+			print( "<br />\n" );
 			// Get any public information and display that
 			if( $about_user != "" )
 				print( "<div style=\"margin: 0px 10px 25px 0px;\"><h2>About</h2>\n$about_user</div>\n" );

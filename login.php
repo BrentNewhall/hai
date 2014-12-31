@@ -47,8 +47,7 @@ if( $stmt->prepare( "SELECT username FROM users WHERE username = ? AND password 
 		// after 30 days.
 		if( isset( $_POST["stay-logged-in"] )  &&
 		    $_POST["stay-logged-in"] != "" )
-			setcookie( "logged_in", $username, time() + 60*60*24*30, "/",
-			           $_SERVER["SERVER_NAME"] );
+			setcookie( "logged_in", $username, time() + 60*60*24*30, "/" );
 		header( "Location: index.php\n\n" );  exit(0);
 		}
 	}

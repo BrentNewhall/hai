@@ -494,7 +494,8 @@ function loadLatestPosts( room_id, last_post_time )
 				// Strip containing div
 				//t = t.replace( /<div id="post-container" class="post-container">/, "" );
 				//t = t.substr( 0, t.length - 5 );
-				div.innerHTML = t + div.innerHTML;
+				if( t != "" )
+					div.innerHTML = t + div.innerHTML;
    				}
    			}
    		}
